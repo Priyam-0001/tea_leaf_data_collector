@@ -1,10 +1,11 @@
 import { router, useFocusEffect } from 'expo-router';
 import { useCallback } from 'react';
-import { BackHandler, Platform, StyleSheet, Text, View } from 'react-native';
+import { Alert, BackHandler, Platform, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/components/ActionButton';
 import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
+import { useAuthStore } from '@/store/authStore';
 import { useDeviceStore } from '@/store/deviceStore';
 import { useSampleStore } from '@/store/sampleStore';
 
@@ -13,6 +14,8 @@ export default function HomeScreen() {
   const samples = useSampleStore((state) => state.samples);
   const loading = useSampleStore((state) => state.loading);
   const loadSamples = useSampleStore((state) => state.loadSamples);
+  const signOut = useAuthStore((state) => state.signOut);
+  const authLoading = useAuthStore((state) => state.isLoading);
 
   useFocusEffect(
     useCallback(() => {
@@ -24,6 +27,19 @@ export default function HomeScreen() {
 
   const samplesWithImages = samples.filter(sample => sample.images.length > 0).length;
   const samplesWithoutImages = samples.length - samplesWithImages;
+
+  const handleLogout = async () => {
+    try {
+      await signOut();
+    } catch (error) {
+      Alert.alert(
+        'Logout Failed',
+        error instanceof Error
+          ? error.message
+          : 'Unable to logout.'
+      );
+    }
+  };
 
   const handleExit = () => {
     if (Platform.OS === 'android') {
@@ -53,6 +69,7 @@ export default function HomeScreen() {
             <ActionButton label="Add Sample" onPress={() => router.push('/add-sample')} />
             <ActionButton label="View/Update Sample" onPress={() => router.push('/update-sample')} />
             <ActionButton label="Export Records" onPress={() => router.push('/export-records')} />
+            <ActionButton label="Logout" onPress={handleLogout} variant="danger" />
             <ActionButton label="Exit" onPress={handleExit} variant="danger" />
           </View>
 
