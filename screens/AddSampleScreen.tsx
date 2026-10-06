@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Alert, BackHandler, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,19 +22,10 @@ import {
 import { useImageCapture } from '@/hooks/useImageCapture';
 import { useLocationCapture } from '@/hooks/useLocation';
 import { useSaveSample } from '@/hooks/useSaveSample';
-
 import { useDeviceStore } from '@/store/deviceStore';
-
 import type { SampleFormInput } from '@/types/sample';
-
 import { toIsoTimestamp } from '@/utils/dateFormat';
-import {
-  generateSampleId,
-  sanitizeDeviceModel,
-} from '@/utils/sampleId';
-
 import { validateSample } from '@/utils/sampleValidation';
-
 import ImageViewing from 'react-native-image-viewing';
 
 export default function AddSampleScreen() {
@@ -133,17 +124,6 @@ export default function AddSampleScreen() {
     return () => backHandler.remove();
   }, []);
 
-
-  const sampleIdPreview = useMemo(() => {
-    if (!deviceInfo) return '';
-
-    return generateSampleId({
-      installationId: deviceInfo.installationId,
-      deviceModel: sanitizeDeviceModel(deviceInfo.model),
-      timestamp: now,
-    });
-  }, [deviceInfo, now]);
-
   const onSubmit = handleSubmit(async (values) => {
 
     // Require valid location coordinates before saving
@@ -230,7 +210,6 @@ export default function AddSampleScreen() {
           {deviceInfo && (
             <SectionCard title="Automatic Information">
               <AutoInfoPanel
-                sampleIdPreview={sampleIdPreview}
                 timestamp={toIsoTimestamp(now)}
                 latitude={coordinates?.latitude ?? null}
                 longitude={coordinates?.longitude ?? null}

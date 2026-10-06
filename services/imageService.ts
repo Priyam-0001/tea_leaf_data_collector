@@ -17,7 +17,6 @@ function ensureImagesRoot(): Directory {
 
 export interface SaveImageParams {
   tempUri: string;
-  installationId: string;
   imageIndex: number;
 }
 
@@ -25,9 +24,6 @@ export interface SaveImageParams {
 export function saveSampleImage(params: SaveImageParams): string {
   const root = ensureImagesRoot();
   const fileName = generateImageFileName(
-    {
-      installationId: params.installationId,
-    },
     params.imageIndex,
   );
 

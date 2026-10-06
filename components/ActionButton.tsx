@@ -5,7 +5,7 @@ import { BUTTON_HEIGHT, COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
 interface ActionButtonProps {
   label: string;
   onPress: () => void;
-  variant?: 'primary' | 'secondary' | 'danger';
+  variant?: 'primary' | 'secondary' | 'tertiary' | 'danger';
   disabled?: boolean;
   style?: ViewStyle;
 }
@@ -17,12 +17,14 @@ export function ActionButton({
   disabled = false,
   style,
 }: ActionButtonProps) {
-  const backgroundColor =
-    variant === 'danger'
-      ? COLORS.danger
-      : variant === 'secondary'
-        ? COLORS.surface
-        : COLORS.primary;
+  const VARIANT_COLORS = {
+    danger: COLORS.danger,
+    secondary: COLORS.surface,
+    tertiary: COLORS.tertiary,
+    primary: COLORS.primary,
+  };
+
+  const backgroundColor = VARIANT_COLORS[variant] || COLORS.primary;
 
   const textColor = variant === 'secondary' ? COLORS.text : '#FFFFFF';
   const borderColor = variant === 'secondary' ? COLORS.border : backgroundColor;

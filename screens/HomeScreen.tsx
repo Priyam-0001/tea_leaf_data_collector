@@ -15,7 +15,6 @@ export default function HomeScreen() {
   const loading = useSampleStore((state) => state.loading);
   const loadSamples = useSampleStore((state) => state.loadSamples);
   const signOut = useAuthStore((state) => state.signOut);
-  const authLoading = useAuthStore((state) => state.isLoading);
 
   useFocusEffect(
     useCallback(() => {
@@ -29,16 +28,36 @@ export default function HomeScreen() {
   const samplesWithoutImages = samples.length - samplesWithImages;
 
   const handleLogout = async () => {
-    try {
-      await signOut();
-    } catch (error) {
-      Alert.alert(
-        'Logout Failed',
-        error instanceof Error
-          ? error.message
-          : 'Unable to logout.'
-      );
-    }
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await signOut();
+              router.replace('../login');
+            } catch (error) {
+              Alert.alert(
+                'Logout Failed',
+                error instanceof Error
+                  ? error.message
+                  : 'Unable to logout.'
+              );
+            }
+          },
+        },
+      ],
+      {
+        cancelable: true,
+      }
+    );
   };
 
   const handleExit = () => {
@@ -69,8 +88,11 @@ export default function HomeScreen() {
             <ActionButton label="Add Sample" onPress={() => router.push('/add-sample')} />
             <ActionButton label="View/Update Sample" onPress={() => router.push('/update-sample')} />
             <ActionButton label="Export Records" onPress={() => router.push('/export-records')} />
-            <ActionButton label="Logout" onPress={handleLogout} variant="danger" />
-            <ActionButton label="Exit" onPress={handleExit} variant="danger" />
+            <ActionButton label="Upload all samples" onPress={() => {}} variant='tertiary' />
+            <View style={[styles.buttons, { flexDirection: 'row' }]}>
+              <ActionButton label="Logout" onPress={handleLogout} style={{ flex: 1 }} variant="danger" />
+              <ActionButton label="Exit" onPress={handleExit} style={{ flex: 1 }} variant="danger" />
+            </View>
           </View>
 
           {deviceInfo ? (

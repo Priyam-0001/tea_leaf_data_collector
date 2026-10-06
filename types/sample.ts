@@ -39,6 +39,7 @@ export type LeafPosition =
 
 export interface Sample {
   id: string;
+  userId: string;
 
   // Sample Information
   cloneNumber: string;
@@ -52,7 +53,6 @@ export interface Sample {
   meterReading3: number;
 
   // Existing workflow
-  wetLabRequired: boolean;
   wetLabCompleted: boolean;
 
   // Collection Information
@@ -146,7 +146,6 @@ export type SampleUpdateInput = Partial<
     | 'meterReading1'
     | 'meterReading2'
     | 'meterReading3'
-    | 'wetLabRequired'
     | 'wetLabCompleted'
     | 'flush'
     | 'flushAutoDetected'
@@ -185,6 +184,7 @@ export interface DeviceInfo {
 
 export interface SampleRow {
   id: string;
+  user_id: string;
 
   clone_number: string;
   tree_number: string;
@@ -194,8 +194,7 @@ export interface SampleRow {
   meter_reading_1: number;
   meter_reading_2: number;
   meter_reading_3: number;
-
-  wet_lab_required: number;
+  
   wet_lab_completed: number;
 
   flush: Flush;
@@ -236,7 +235,7 @@ export interface SampleRow {
  */
 
 export interface SampleImageRow {
-  id: number;
+  id: string;
   sample_id: string;
   file_path: string;
   sort_order: number;

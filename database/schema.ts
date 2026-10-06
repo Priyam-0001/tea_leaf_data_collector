@@ -1,6 +1,7 @@
 export const SAMPLES_TABLE = `
 CREATE TABLE IF NOT EXISTS samples (
   id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL,
 
   -- Sample Information
   clone_number TEXT NOT NULL,
@@ -35,7 +36,6 @@ CREATE TABLE IF NOT EXISTS samples (
   disease INTEGER NOT NULL DEFAULT 0,
 
   -- Wet Lab
-  wet_lab_required INTEGER NOT NULL DEFAULT 0,
   wet_lab_completed INTEGER NOT NULL DEFAULT 0,
 
   -- Device Information
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS samples (
 
 export const SAMPLE_IMAGES_TABLE = `
 CREATE TABLE IF NOT EXISTS sample_images (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id TEXT PRIMARY KEY,
   sample_id TEXT NOT NULL,
   file_path TEXT NOT NULL,
   sort_order INTEGER NOT NULL,

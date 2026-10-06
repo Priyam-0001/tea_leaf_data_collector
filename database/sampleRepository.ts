@@ -1,4 +1,6 @@
 import { getDatabase } from '@/database/connection';
+import { useAuthStore } from '@/store/authStore';
+
 import type {
   Sample,
   SampleImageRow,
@@ -7,10 +9,12 @@ import type {
   SampleUpdateInput,
 } from '@/types/sample';
 import { toIsoTimestamp } from '@/utils/dateFormat';
+import { generateUuid } from '@/utils/sampleId';
 
 function rowToSample(row: SampleRow, images: string[]): Sample {
   return {
     id: row.id,
+    userId: row.user_id,
 
     // Sample Information
     cloneNumber: row.clone_number,
@@ -24,7 +28,6 @@ function rowToSample(row: SampleRow, images: string[]): Sample {
     meterReading3: row.meter_reading_3,
 
     // Wet Lab
-    wetLabRequired: row.wet_lab_required === 1,
     wetLabCompleted: row.wet_lab_completed === 1,
 
     // Collection Information
@@ -83,18 +86,28 @@ async function hydrateSample(row: SampleRow): Promise<Sample> {
 
 export type CreateSampleParams = Omit<
   Sample,
-  'createdAt' | 'updatedAt'
+  'id' | 'userId' | 'createdAt' | 'updatedAt'
 >;
 
 /** Repository for sample CRUD operations. */
 export const sampleRepository = {
   async create(params: CreateSampleParams): Promise<Sample> {
+    const session = useAuthStore.getState().session;
+
+    if (!session?.user) {
+      throw new Error('User is not authenticated.');
+    }
+
+    const userId = session.user.id;
+    const sampleId = generateUuid();
+
     const db = await getDatabase();
     const now = toIsoTimestamp();
 
     await db.runAsync(
       `INSERT INTO samples (
       id,
+      user_id,
 
       clone_number,
       tree_number,
@@ -122,7 +135,6 @@ export const sampleRepository = {
       pest_damage,
       disease,
 
-      wet_lab_required,
       wet_lab_completed,
 
       device_manufacturer,
@@ -138,19 +150,20 @@ export const sampleRepository = {
       updated_at
     )
     VALUES (
-      ?, ?, ?, ?, ?,
+      ?, ?, ?, ?, ?, ?,
       ?, ?, ?,
       ?, ?,
       ?, ?, ?,
       ?, ?,
       ?, ?, ?, ?, ?, ?,
-      ?, ?,
+      ?,
       ?, ?, ?, ?, ?, ?,
       ?,
       ?, ?
     )`,
 
-      params.id,
+      sampleId,
+      userId,
 
       params.cloneNumber.trim(),
       params.treeNumber.trim(),
@@ -178,7 +191,6 @@ export const sampleRepository = {
       params.pestDamage ? 1 : 0,
       params.disease ? 1 : 0,
 
-      params.wetLabRequired ? 1 : 0,
       params.wetLabCompleted ? 1 : 0,
 
       params.deviceManufacturer,
@@ -195,11 +207,14 @@ export const sampleRepository = {
     );
 
     for (let index = 0; index < params.images.length; index++) {
+      const imageId = generateUuid();
+
       await db.runAsync(
         `INSERT INTO sample_images
-      (sample_id, file_path, sort_order)
-      VALUES (?, ?, ?)`,
-        params.id,
+      (id, sample_id, file_path, sort_order)
+      VALUES (?, ?, ?, ?)`,
+        imageId,
+        sampleId,
         params.images[index],
         index + 1,
       );
@@ -207,7 +222,7 @@ export const sampleRepository = {
 
     const row = await db.getFirstAsync<SampleRow>(
       'SELECT * FROM samples WHERE id = ?',
-      params.id,
+      sampleId,
     );
 
     if (!row) {
@@ -316,7 +331,6 @@ export const sampleRepository = {
       pest_damage = ?,
       disease = ?,
 
-      wet_lab_required = ?,
       wet_lab_completed = ?,
 
       remarks = ?,
@@ -346,7 +360,6 @@ export const sampleRepository = {
       merged.pestDamage ? 1 : 0,
       merged.disease ? 1 : 0,
 
-      merged.wetLabRequired ? 1 : 0,
       merged.wetLabCompleted ? 1 : 0,
 
       merged.remarks.trim(),
