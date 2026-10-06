@@ -8,6 +8,8 @@ import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { useDeviceStore } from '@/store/deviceStore';
 import { useSampleStore } from '@/store/sampleStore';
+import { supabase } from '@/database/supabase';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 
 export default function HomeScreen() {
   const deviceInfo = useDeviceStore((state) => state.deviceInfo);
@@ -47,6 +49,43 @@ export default function HomeScreen() {
     }
   };
 
+  
+
+const testCloudinarySigning = async () => {
+  try {
+    const { data, error } = await supabase.functions.invoke(
+      'cloudinary-signin',
+      {
+        body: {},
+      }
+    );
+
+    if (error) {
+      if (error instanceof FunctionsHttpError) {
+        const errorBody = await error.context.json();
+
+        console.error(
+          'Cloudinary signing function returned:',
+          errorBody
+        );
+
+        console.error(
+          'Status:',
+          error.context.status
+        );
+      } else {
+        console.error('Function invocation error:', error);
+      }
+
+      return;
+    }
+
+    console.log('Cloudinary signing response:', data);
+  } catch (error) {
+    console.error('Unexpected error:', error);
+  }
+};
+
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.page}>
@@ -71,6 +110,7 @@ export default function HomeScreen() {
             <ActionButton label="Export Records" onPress={() => router.push('/export-records')} />
             <ActionButton label="Logout" onPress={handleLogout} variant="danger" />
             <ActionButton label="Exit" onPress={handleExit} variant="danger" />
+            <ActionButton label="Test Sign" onPress={testCloudinarySigning} />
           </View>
 
           {deviceInfo ? (
