@@ -11,6 +11,13 @@ import type {
 import { toIsoTimestamp } from '@/utils/dateFormat';
 import { generateUuid } from '@/utils/sampleId';
 
+export interface SampleImageUploadRow {
+  id: string;
+  sampleId: string;
+  filePath: string;
+  sortOrder: number;
+}
+
 function rowToSample(row: SampleRow, images: string[]): Sample {
   return {
     id: row.id,
@@ -375,10 +382,12 @@ export const sampleRepository = {
       );
 
       for (let index = 0; index < merged.images.length; index++) {
+        const imageId = generateUuid();
         await db.runAsync(
           `INSERT INTO sample_images
-        (sample_id, file_path, sort_order)
-        VALUES (?, ?, ?)`,
+        (id, sample_id, file_path, sort_order)
+        VALUES (?, ?, ?, ?)`,
+          imageId,
           id,
           merged.images[index],
           index + 1,
@@ -428,5 +437,26 @@ export const sampleRepository = {
       `DELETE FROM samples WHERE id IN (${placeholders})`,
       ...ids,
     );
+  },
+
+  async getImageRowsBySampleId(
+    sampleId: string,
+  ): Promise<SampleImageUploadRow[]> {
+    const db = await getDatabase();
+
+    const rows = await db.getAllAsync<SampleImageRow>(
+      `SELECT id, sample_id, file_path, sort_order
+     FROM sample_images
+     WHERE sample_id = ?
+     ORDER BY sort_order ASC`,
+      sampleId,
+    );
+
+    return rows.map((row) => ({
+      id: row.id,
+      sampleId: row.sample_id,
+      filePath: row.file_path,
+      sortOrder: row.sort_order,
+    }));
   },
 };

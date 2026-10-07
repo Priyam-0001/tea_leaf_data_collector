@@ -1,6 +1,6 @@
 import { supabase } from '@/database/supabase';
-import { fetch } from 'expo/fetch';
 import { File } from 'expo-file-system';
+import { fetch } from 'expo/fetch';
 
 interface CloudinarySignature {
     cloudName: string;
@@ -8,6 +8,8 @@ interface CloudinarySignature {
     timestamp: number;
     signature: string;
     folder: string;
+    use_filename: string;
+    unique_filename: string;
 }
 
 export interface CloudinaryUploadResult {
@@ -106,6 +108,8 @@ export async function uploadImageToCloudinary(
         timestamp,
         signature,
         folder,
+        use_filename,
+        unique_filename,
     } = await getCloudinarySignature();
 
     // 2. Prepare the local image
@@ -116,7 +120,7 @@ export async function uploadImageToCloudinary(
 
     const formData = new FormData();
 
-    formData.append('file', file);
+    formData.append('file', file, fileName);
 
     // These values must match the values used when
     // the Edge Function generated the signature.
@@ -124,6 +128,8 @@ export async function uploadImageToCloudinary(
     formData.append('timestamp', String(timestamp));
     formData.append('signature', signature);
     formData.append('folder', folder);
+    formData.append('use_filename', use_filename);
+    formData.append('unique_filename', unique_filename);
 
     // 3. Upload directly to Cloudinary
     const uploadUrl =

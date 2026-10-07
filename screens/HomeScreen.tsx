@@ -5,9 +5,11 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/components/ActionButton';
 import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
+import { uploadAllSamples } from '@/services/sampleUploadService';
 import { useAuthStore } from '@/store/authStore';
 import { useDeviceStore } from '@/store/deviceStore';
 import { useSampleStore } from '@/store/sampleStore';
+import { ScrollView } from 'react-native-gesture-handler';
 
 export default function HomeScreen() {
   const deviceInfo = useDeviceStore((state) => state.deviceInfo);
@@ -26,6 +28,20 @@ export default function HomeScreen() {
 
   const samplesWithImages = samples.filter(sample => sample.images.length > 0).length;
   const samplesWithoutImages = samples.length - samplesWithImages;
+
+  const handleUploadAllSamples = async () => {
+    try {
+      console.log('Starting sample upload...');
+
+      const result = await uploadAllSamples((progress) => {
+        // console.log('UPLOAD PROGRESS:', progress);
+      });
+
+      console.log('UPLOAD RESULT:', result);
+    } catch (error) {
+      console.error('UPLOAD ERROR:', error);
+    }
+  };
 
   const handleLogout = async () => {
     Alert.alert(
@@ -68,40 +84,44 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaProvider>
-      <SafeAreaView style={styles.page}>
-        <View style={styles.container}>
-          <Text style={styles.title}>Tea Leaf Data Collector</Text>
-          <Text style={styles.subtitle}>Offline field data collection</Text>
+      <ScrollView
+        keyboardShouldPersistTaps="handled"
+      >
+        <SafeAreaView style={styles.page}>
+          <View style={styles.container}>
+            <Text style={styles.title}>Tea Leaf Data Collector</Text>
+            <Text style={styles.subtitle}>Offline field data collection</Text>
 
-          <View style={styles.stats}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{samplesWithImages}</Text>
-              <Text style={styles.statLabel}>Sample(s) With Images</Text>
+            <View style={styles.stats}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{samplesWithImages}</Text>
+                <Text style={styles.statLabel}>Sample(s) With Images</Text>
+              </View>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{samplesWithoutImages}</Text>
+                <Text style={styles.statLabel}>Sample(s) Without Images</Text>
+              </View>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{samplesWithoutImages}</Text>
-              <Text style={styles.statLabel}>Sample(s) Without Images</Text>
+
+            <View style={styles.buttons}>
+              <ActionButton label="Add Sample" onPress={() => router.push('/add-sample')} />
+              <ActionButton label="View/Update Sample" onPress={() => router.push('/update-sample')} />
+              <ActionButton label="Export Records" onPress={() => router.push('/export-records')} />
+              <ActionButton label="Upload all samples" onPress={handleUploadAllSamples} variant='tertiary' />
+              <View style={[styles.buttons, { flexDirection: 'row' }]}>
+                <ActionButton label="Logout" onPress={handleLogout} style={{ flex: 1 }} variant="danger" />
+                <ActionButton label="Exit" onPress={handleExit} style={{ flex: 1 }} variant="danger" />
+              </View>
             </View>
+
+            {deviceInfo ? (
+              <Text style={styles.deviceInfo}>
+                Device: {deviceInfo.manufacturer} {deviceInfo.model}
+              </Text>
+            ) : null}
           </View>
-
-          <View style={styles.buttons}>
-            <ActionButton label="Add Sample" onPress={() => router.push('/add-sample')} />
-            <ActionButton label="View/Update Sample" onPress={() => router.push('/update-sample')} />
-            <ActionButton label="Export Records" onPress={() => router.push('/export-records')} />
-            <ActionButton label="Upload all samples" onPress={() => {}} variant='tertiary' />
-            <View style={[styles.buttons, { flexDirection: 'row' }]}>
-              <ActionButton label="Logout" onPress={handleLogout} style={{ flex: 1 }} variant="danger" />
-              <ActionButton label="Exit" onPress={handleExit} style={{ flex: 1 }} variant="danger" />
-            </View>
-          </View>
-
-          {deviceInfo ? (
-            <Text style={styles.deviceInfo}>
-              Device: {deviceInfo.manufacturer} {deviceInfo.model}
-            </Text>
-          ) : null}
-        </View>
-      </SafeAreaView>
+        </SafeAreaView>
+      </ScrollView>
     </SafeAreaProvider>
   );
 }
