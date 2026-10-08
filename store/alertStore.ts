@@ -27,12 +27,14 @@ export const useAlertStore = create<AlertState>((set) => ({
         });
         timeoutId = setTimeout(() => {
             useAlertStore.getState().hideAlert();
-            clearTimeout(timeoutId)
         }, 7000)
     },
 
     hideAlert: () => {
-        if (timeoutId) clearTimeout(timeoutId);
+        if (timeoutId){
+            clearTimeout(timeoutId);
+            timeoutId = null;
+        }
         set({
             visible: false,
             message: '',

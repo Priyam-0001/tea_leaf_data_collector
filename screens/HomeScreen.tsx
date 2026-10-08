@@ -1,16 +1,21 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback } from 'react';
-import { Alert, BackHandler, Platform, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  BackHandler,
+  Platform,
+  StyleSheet,
+  Text,
+  View,
+} from 'react-native';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-
 import { ActionButton } from '@/components/ActionButton';
 import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
-import { uploadAllSamples } from '@/services/sampleUploadService';
-import { useAlertStore } from '@/store/alertStore';
 import { useAuthStore } from '@/store/authStore';
 import { useDeviceStore } from '@/store/deviceStore';
 import { useSampleStore } from '@/store/sampleStore';
 import { ScrollView } from 'react-native-gesture-handler';
+import { useCallback } from 'react';
+import { Cloud } from 'lucide-react-native';
 
 export default function HomeScreen() {
   const deviceInfo = useDeviceStore((state) => state.deviceInfo);
@@ -18,8 +23,6 @@ export default function HomeScreen() {
   const loading = useSampleStore((state) => state.loading);
   const loadSamples = useSampleStore((state) => state.loadSamples);
   const signOut = useAuthStore((state) => state.signOut);
-
-  const showAlert = useAlertStore.getState().showAlert;
 
   useFocusEffect(
     useCallback(() => {
@@ -32,23 +35,10 @@ export default function HomeScreen() {
   const samplesWithImages = samples.filter(sample => sample.images.length > 0).length;
   const samplesWithoutImages = samples.length - samplesWithImages;
 
-  const handleUploadAllSamples = async () => {
-    try {
-      console.log('Starting sample upload...');
-      try {
-        showAlert('info', "Uploading samples")
-        const result = await uploadAllSamples((progress) => {
-          // console.log('UPLOAD PROGRESS:', progress);
-        });
-        console.log('UPLOAD RESULT:', result);
-        showAlert('success', "Sample upload completed");
-      } catch(error) {
-        showAlert('error', error+"")
-      }
-    } catch (error) {
-      console.error('UPLOAD ERROR:', error);
-    }
-  };
+  const totalLocalImages = samples.reduce(
+    (total, sample) => total + sample.images.length,
+    0,
+  );
 
   const handleLogout = async () => {
     Alert.alert(
@@ -114,7 +104,37 @@ export default function HomeScreen() {
               <ActionButton label="Add Sample" onPress={() => router.push('/add-sample')} />
               <ActionButton label="View/Update Sample" onPress={() => router.push('/update-sample')} />
               <ActionButton label="Export Records" onPress={() => router.push('/export-records')} />
-              <ActionButton label="Upload all samples" onPress={handleUploadAllSamples} variant='tertiary' />
+
+              <View style={styles.syncCard}>
+                <View style={styles.syncHeader}>
+                  <View style={styles.syncIconContainer}>
+                    <Cloud
+                      size={22}
+                      color={COLORS.primary}
+                    />
+                  </View>
+
+                  <View style={styles.syncTextContainer}>
+                    <Text style={styles.syncTitle}>
+                      Cloud Sync
+                    </Text>
+
+                    <Text style={styles.syncSubtitle}>
+                      {samplesWithImages > 0
+                        ? `${samplesWithImages} sample(s) • ${totalLocalImages} image(s) ready`
+                        : 'No samples ready to sync'}
+                    </Text>
+                  </View>
+                </View>
+
+                <ActionButton
+                  label="Sync Now"
+                  onPress={() => router.push('/sync')}
+                  disabled={samplesWithImages === 0}
+                  variant="tertiary"
+                />
+              </View>
+
               <View style={[styles.buttons, { flexDirection: 'row' }]}>
                 <ActionButton label="Logout" onPress={handleLogout} style={{ flex: 1 }} variant="danger" />
                 <ActionButton label="Exit" onPress={handleExit} style={{ flex: 1 }} variant="danger" />
@@ -190,5 +210,44 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.textSecondary,
     textAlign: 'center',
+  },
+  syncCard: {
+    backgroundColor: COLORS.surface,
+    borderRadius: 16,
+    padding: SPACING.lg,
+    gap: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.primary + '20',
+  },
+
+  syncHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  syncIconContainer: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: SPACING.md,
+  },
+
+  syncTextContainer: {
+    flex: 1,
+  },
+
+  syncTitle: {
+    fontSize: 17,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+
+  syncSubtitle: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 3,
   },
 });
