@@ -92,9 +92,9 @@ function ViewSampleDetails({
 
       <SectionCard title="Collection Information">
         <DetailRow label="Flush" value={sample.flush} />
-        <DetailRow label="Flush Auto Detected" value={formatBoolean(sample.flushAutoDetected)} />
-        <DetailRow label="Wet Lab Required" value={formatBoolean(sample.wetLabRequired)} />
-        <DetailRow label="Wet Lab Completed" value={formatBoolean(sample.wetLabCompleted)} />
+        {/* <DetailRow label="Flush Auto Detected" value={formatBoolean(sample.flushAutoDetected)} /> */}
+        {/* <DetailRow label="Wet Lab Required" value={formatBoolean(sample.wetLabRequired)} /> */}
+        {/* <DetailRow label="Wet Lab Completed" value={formatBoolean(sample.wetLabCompleted)} /> */}
       </SectionCard>
 
       <SectionCard title="Location">
@@ -250,7 +250,6 @@ export default function EditSampleScreen() {
         meterReading1: loaded.meterReading1.toString(),
         meterReading2: loaded.meterReading2.toString(),
         meterReading3: loaded.meterReading3.toString(),
-        wetLabRequired: loaded.wetLabRequired,
         wetLabCompleted: loaded.wetLabCompleted,
         flush: loaded.flush,
         flushAutoDetected: loaded.flushAutoDetected,
@@ -314,7 +313,6 @@ export default function EditSampleScreen() {
       meterReading1: sample.meterReading1.toString(),
       meterReading2: sample.meterReading2.toString(),
       meterReading3: sample.meterReading3.toString(),
-      wetLabRequired: sample.wetLabRequired,
       wetLabCompleted: sample.wetLabCompleted,
       flush: sample.flush,
       flushAutoDetected: sample.flushAutoDetected,

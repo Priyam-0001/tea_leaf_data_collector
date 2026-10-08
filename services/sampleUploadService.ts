@@ -3,6 +3,7 @@ import * as Network from 'expo-network';
 import { SampleImageUploadRow, sampleRepository } from '@/database/sampleRepository';
 import { supabase } from '@/database/supabase';
 import { uploadImageToCloudinary } from '@/services/cloudinary';
+import { useAlertStore } from '@/store/alertStore';
 import { Sample } from '@/types/sample';
 
 export interface UploadProgress {
@@ -13,6 +14,8 @@ export interface UploadProgress {
   skippedImages: number;
   failedSamples: number;
 }
+
+const showAlert = useAlertStore.getState().showAlert;
 
 async function uploadSample(sample: Sample): Promise<void> {
   const {
@@ -159,6 +162,7 @@ export async function uploadAllSamples(
     !networkState.isConnected ||
     networkState.isInternetReachable === false
   ) {
+    showAlert('error', "No internet connection. Please connect to the internet and try again.");
     throw new Error(
       'No internet connection. Please connect to the internet and try again.',
     );
@@ -169,6 +173,7 @@ export async function uploadAllSamples(
   } = await supabase.auth.getSession();
 
   if (!session?.user) {
+    showAlert('error', "User is not authenticated.");
     throw new Error('User is not authenticated.');
   }
 

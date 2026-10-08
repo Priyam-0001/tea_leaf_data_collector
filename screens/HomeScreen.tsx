@@ -6,6 +6,7 @@ import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import { ActionButton } from '@/components/ActionButton';
 import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
 import { uploadAllSamples } from '@/services/sampleUploadService';
+import { useAlertStore } from '@/store/alertStore';
 import { useAuthStore } from '@/store/authStore';
 import { useDeviceStore } from '@/store/deviceStore';
 import { useSampleStore } from '@/store/sampleStore';
@@ -17,6 +18,8 @@ export default function HomeScreen() {
   const loading = useSampleStore((state) => state.loading);
   const loadSamples = useSampleStore((state) => state.loadSamples);
   const signOut = useAuthStore((state) => state.signOut);
+
+  const showAlert = useAlertStore.getState().showAlert;
 
   useFocusEffect(
     useCallback(() => {
@@ -32,12 +35,16 @@ export default function HomeScreen() {
   const handleUploadAllSamples = async () => {
     try {
       console.log('Starting sample upload...');
-
-      const result = await uploadAllSamples((progress) => {
-        // console.log('UPLOAD PROGRESS:', progress);
-      });
-
-      console.log('UPLOAD RESULT:', result);
+      try {
+        showAlert('info', "Uploading samples")
+        const result = await uploadAllSamples((progress) => {
+          // console.log('UPLOAD PROGRESS:', progress);
+        });
+        console.log('UPLOAD RESULT:', result);
+        showAlert('success', "Sample upload completed");
+      } catch(error) {
+        showAlert('error', error+"")
+      }
     } catch (error) {
       console.error('UPLOAD ERROR:', error);
     }

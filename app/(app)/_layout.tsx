@@ -1,11 +1,15 @@
+import AlertBar from '@/components/AlertBox';
 import { Stack } from 'expo-router';
 
 export default function AppLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerShown: false,
-      }}
-    />
+    <>
+      <Stack
+        screenOptions={{
+          headerShown: false,
+        }}
+      />
+      <AlertBar />
+    </>
   );
 }

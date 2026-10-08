@@ -3,6 +3,7 @@ import { Alert } from 'react-native';
 import { useCameraPermission } from 'react-native-vision-camera';
 
 import { deleteSampleImage, saveSampleImage } from '@/services/imageService';
+import { useAlertStore } from '@/store/alertStore';
 
 export interface CapturedImage {
   uri: string;
@@ -22,6 +23,8 @@ export function useImageCapture(options: UseImageCaptureOptions) {
   const [images, setImages] = useState<CapturedImage[]>([]);
   const [showCamera, setShowCamera] = useState(false);
 
+  const showAlert = useAlertStore.getState().showAlert;
+
   useEffect(() => {
     if (!hasPermission) {
       requestPermission();
@@ -32,6 +35,7 @@ export function useImageCapture(options: UseImageCaptureOptions) {
     if (!hasPermission) {
       await requestPermission();
       if (!hasPermission) {
+        showAlert('error', "Allow camera access to capture images");
         Alert.alert('Camera permission', 'Camera access is required to capture leaf images.');
         return;
       }

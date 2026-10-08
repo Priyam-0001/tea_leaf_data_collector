@@ -22,6 +22,7 @@ import {
 import { useImageCapture } from '@/hooks/useImageCapture';
 import { useLocationCapture } from '@/hooks/useLocation';
 import { useSaveSample } from '@/hooks/useSaveSample';
+import { useAlertStore } from '@/store/alertStore';
 import { useDeviceStore } from '@/store/deviceStore';
 import type { SampleFormInput } from '@/types/sample';
 import { toIsoTimestamp } from '@/utils/dateFormat';
@@ -44,6 +45,7 @@ export default function AddSampleScreen() {
   } = useLocationCapture();
 
   const [now] = useState(() => new Date());
+  const showAlert = useAlertStore.getState().showAlert;
 
   const {
     control,
@@ -154,18 +156,24 @@ export default function AddSampleScreen() {
       coordinates: coordinates,
     });
 
-    if (!sample) return;
+    if (!sample) {
+      showAlert('error', "Failed to save sample.");
+      return;
+    }
 
-    Alert.alert(
-      'Sample Saved',
-      `Sample ID: ${sample.id}`,
-      [
-        {
-          text: 'OK',
-          onPress: () => router.back(),
-        },
-      ],
-    );
+    showAlert('success', "Sample saved.");
+    router.back();
+
+    // Alert.alert(
+    //   'Sample Saved',
+    //   `Sample ID: ${sample.id}`,
+    //   [
+    //     {
+    //       text: 'OK',
+    //       onPress: () => router.back(),
+    //     },
+    //   ],
+    // );
 
     resetImages();
   });

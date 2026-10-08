@@ -1,4 +1,5 @@
 import { getDatabase } from '@/database/connection';
+import { useAlertStore } from '@/store/alertStore';
 import { useAuthStore } from '@/store/authStore';
 
 import type {
@@ -102,6 +103,7 @@ export const sampleRepository = {
     const session = useAuthStore.getState().session;
 
     if (!session?.user) {
+      useAlertStore.getState().showAlert('error', 'User is not authenticated.');
       throw new Error('User is not authenticated.');
     }
 
