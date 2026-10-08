@@ -16,7 +16,6 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, router } from 'expo-router';
-
 import { ActionButton } from '@/components/ActionButton';
 import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
 import { useAlertStore } from '@/store/alertStore';
@@ -26,16 +25,24 @@ import {
     uploadAllSamples,
 } from '@/services/sampleUploadService';
 import { ScrollView } from 'react-native-gesture-handler';
+import { useEffect } from 'react';
+import { getSyncState } from '@/services/syncPersistence';
+import { notifySyncStarted } from '@/services/syncNotifications';
 
 interface UploadProgress {
     totalSamples: number;
     completedSamples: number;
+
     currentSample: string;
+
     uploadedImages: number;
     skippedImages: number;
+    failedImages: number;
     failedSamples: number;
+
     totalImages: number;
     completedImages: number;
+
     currentImage: number;
 }
 
@@ -45,6 +52,7 @@ const initialProgress: UploadProgress = {
     currentSample: '',
     uploadedImages: 0,
     skippedImages: 0,
+    failedImages: 0,
     failedSamples: 0,
     totalImages: 0,
     completedImages: 0,
@@ -72,6 +80,60 @@ export default function SyncScreen() {
         (total, sample) => total + sample.images.length,
         0,
     );
+
+    useEffect(() => {
+        let mounted = true;
+
+        async function restoreSyncState() {
+            const state = await getSyncState();
+
+            if (!state || !mounted) {
+                return;
+            }
+
+            setHasStarted(true);
+            setCompleted(false);
+
+            // If the app was killed while the sync was running,
+            // it obviously isn't running anymore.
+            setPaused(true);
+
+            setUploadProgress({
+                totalSamples: state.totalSamples,
+                completedSamples:
+                    state.stats.completedSamples,
+
+                currentSample: state.currentSample,
+
+                uploadedImages:
+                    state.stats.uploadedImages,
+
+                skippedImages:
+                    state.stats.skippedImages,
+
+                failedImages:
+                    state.stats.failedImages,
+
+                failedSamples:
+                    state.stats.failedSamples,
+
+                totalImages: state.totalImages,
+
+                completedImages:
+                    state.stats.uploadedImages +
+                    state.stats.skippedImages +
+                    state.stats.failedImages,
+
+                currentImage: state.currentImage,
+            });
+        }
+
+        restoreSyncState();
+
+        return () => {
+            mounted = false;
+        };
+    }, []);
 
     const progressPercentage =
         uploadProgress.totalImages > 0
@@ -128,6 +190,8 @@ export default function SyncScreen() {
                 'Cloud sync started. Uploading your samples...',
             );
 
+            await notifySyncStarted(totalLocalImages);
+
             const result = await uploadAllSamples((progress) => {
                 setUploadProgress(progress);
             });
@@ -180,7 +244,7 @@ export default function SyncScreen() {
         );
     };
 
-    const handleResume = async () => {
+    const handleResumeSync = async () => {
         if (uploading) {
             return;
         }
@@ -188,44 +252,30 @@ export default function SyncScreen() {
         try {
             setUploading(true);
             setPaused(false);
-            setCompleted(false);
 
-            showAlert(
-                'info',
-                'Cloud sync resumed.',
+            const result = await uploadAllSamples(
+                (progress) => {
+                    setUploadProgress(progress);
+                },
+                {
+                    resume: true,
+                },
             );
-
-            const result = await uploadAllSamples((progress) => {
-                setUploadProgress(progress);
-            });
 
             if (result.paused) {
                 setPaused(true);
-
-                showAlert(
-                    'warning',
-                    'Cloud sync paused.',
-                );
-
                 return;
             }
 
             setPaused(false);
             setCompleted(true);
-
-            if (result.failedSamples > 0) {
-                showAlert(
-                    'warning',
-                    `Sync completed with ${result.failedSamples} failed sample(s).`,
-                );
-            } else {
-                showAlert(
-                    'success',
-                    `Cloud sync completed. ${result.uploadedImages} image(s) uploaded.`,
-                );
-            }
         } catch (error) {
-            console.error('RESUME SYNC ERROR:', error);
+            console.error(
+                'RESUME SYNC ERROR:',
+                error,
+            );
+
+            setPaused(true);
 
             showAlert(
                 'error',
@@ -442,7 +492,7 @@ export default function SyncScreen() {
                     {paused ? (
                         <ActionButton
                             label="Resume Sync"
-                            onPress={handleResume}
+                            onPress={handleResumeSync}
                             disabled={uploading}
                             variant="tertiary"
                             style={styles.mainAction}

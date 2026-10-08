@@ -41,6 +41,7 @@
           "locationWhenInUsePermission": "Allow Tea Leaf Data Collector to record GPS coordinates with each sample."
         }
       ],
+      "expo-notifications",
       [
         "expo-splash-screen",
         {
@@ -63,9 +64,8 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "3236a100-5517-4dfc-b0a4-8582da178877"
+        "projectId": "2a188fe9-cb76-4b4f-a7e5-2512fe030378"
       }
-    },
-    "owner": "ansuma_boro"
+    }
   }
 }

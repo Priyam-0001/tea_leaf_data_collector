@@ -9,6 +9,18 @@ import { uploadImageToCloudinary } from '@/services/cloudinary';
 import { useAlertStore } from '@/store/alertStore';
 import { Sample } from '@/types/sample';
 
+import {
+  clearSyncState,
+  getSyncState,
+  saveSyncState,
+} from '@/services/syncPersistence';
+
+import {
+  notifySyncCompleted,
+  notifySyncInterrupted,
+  notifySyncPaused,
+} from '@/services/syncNotifications';
+
 export interface UploadProgress {
   totalSamples: number;
   completedSamples: number;
@@ -145,6 +157,50 @@ function buildProgress(
     currentSample,
     currentImage,
   };
+}
+
+async function persistCurrentSyncState(
+  totalSamples: number,
+  totalImages: number,
+  currentSample: string,
+  currentImage: number,
+  status: 'running' | 'paused',
+): Promise<void> {
+  await saveSyncState({
+    sampleIds: uploadSamples.map(
+      (sample) => sample.id,
+    ),
+
+    currentSampleIndex,
+    currentImageIndex,
+
+    totalSamples,
+    totalImages,
+
+    currentSample,
+    currentImage,
+
+    stats: {
+      uploadedImages:
+        sessionStats.uploadedImages,
+
+      skippedImages:
+        sessionStats.skippedImages,
+
+      failedImages:
+        sessionStats.failedImages,
+
+      completedSamples:
+        sessionStats.completedSamples,
+
+      failedSamples:
+        sessionStats.failedSamples,
+    },
+
+    status,
+
+    updatedAt: new Date().toISOString(),
+  });
 }
 
 // ---------------------------------------------------------
@@ -314,8 +370,13 @@ function getTotalImages(samples: Sample[]): number {
 // Main upload function
 // ---------------------------------------------------------
 
+export interface UploadOptions {
+  resume?: boolean;
+}
+
 export async function uploadAllSamples(
   onProgress?: (progress: UploadProgress) => void,
+  options: UploadOptions = {},
 ): Promise<UploadResult> {
   if (uploadRunning) {
     throw new Error('Upload is already in progress.');
@@ -368,26 +429,94 @@ export async function uploadAllSamples(
   // -------------------------------------------------------
 
   if (!uploadInitialized) {
-    uploadSamples =
+    const persistedState =
+      options.resume
+        ? await getSyncState()
+        : null;
+
+    const allSamples =
       await sampleRepository.getAll();
 
-    currentSampleIndex = 0;
-    currentImageIndex = 0;
+    if (persistedState) {
+      const samplesById = new Map(
+        allSamples.map((sample) => [
+          sample.id,
+          sample,
+        ]),
+      );
 
-    sessionStats = {
-      uploadedImages: 0,
-      skippedImages: 0,
-      failedImages: 0,
+      const restoredSamples =
+        persistedState.sampleIds.map((id) =>
+          samplesById.get(id),
+        );
 
-      completedSamples: 0,
-      failedSamples: 0,
-    };
+      const missingSamples =
+        restoredSamples.filter(
+          (sample): sample is undefined =>
+            sample === undefined,
+        );
+
+      if (missingSamples.length > 0) {
+        throw new Error(
+          'Some samples from the previous sync are no longer available locally.',
+        );
+      }
+
+      uploadSamples =
+        restoredSamples as Sample[];
+
+      currentSampleIndex =
+        persistedState.currentSampleIndex;
+
+      currentImageIndex =
+        persistedState.currentImageIndex;
+
+      sessionStats = {
+        uploadedImages:
+          persistedState.stats.uploadedImages,
+
+        skippedImages:
+          persistedState.stats.skippedImages,
+
+        failedImages:
+          persistedState.stats.failedImages,
+
+        completedSamples:
+          persistedState.stats.completedSamples,
+
+        failedSamples:
+          persistedState.stats.failedSamples,
+      };
+    } else {
+      // Start a completely new sync.
+      uploadSamples = allSamples;
+
+      currentSampleIndex = 0;
+      currentImageIndex = 0;
+
+      sessionStats = {
+        uploadedImages: 0,
+        skippedImages: 0,
+        failedImages: 0,
+
+        completedSamples: 0,
+        failedSamples: 0,
+      };
+    }
 
     uploadInitialized = true;
   }
 
   const totalSamples = uploadSamples.length;
   const totalImages = getTotalImages(uploadSamples);
+
+  await persistCurrentSyncState(
+    totalSamples,
+    totalImages,
+    uploadSamples[currentSampleIndex]?.id ?? '',
+    currentImageIndex,
+    'running',
+  );
 
   uploadRunning = true;
   pauseRequested = false;
@@ -456,13 +585,28 @@ export async function uploadAllSamples(
         // -------------------------------------------------
 
         if (pauseRequested) {
+          const progress = buildProgress(
+            totalSamples,
+            totalImages,
+            sample.id,
+            currentImageIndex + 1,
+          );
+
+          await persistCurrentSyncState(
+            totalSamples,
+            totalImages,
+            sample.id,
+            currentImageIndex,
+            'paused',
+          );
+
+          await notifySyncPaused(
+            progress.completedImages,
+            progress.totalImages,
+          );
+
           return {
-            ...buildProgress(
-              totalSamples,
-              totalImages,
-              sample.id,
-              currentImageIndex + 1,
-            ),
+            ...progress,
             paused: true,
           };
         }
@@ -516,6 +660,14 @@ export async function uploadAllSamples(
 
         currentImageIndex++;
 
+        await persistCurrentSyncState(
+          totalSamples,
+          totalImages,
+          sample.id,
+          currentImageIndex,
+          'running',
+        );
+
         onProgress?.(
           buildProgress(
             totalSamples,
@@ -534,6 +686,14 @@ export async function uploadAllSamples(
 
       currentSampleIndex++;
       currentImageIndex = 0;
+
+      await persistCurrentSyncState(
+        totalSamples,
+        totalImages,
+        uploadSamples[currentSampleIndex]?.id ?? '',
+        0,
+        'running',
+      );
 
       onProgress?.(
         buildProgress(
@@ -558,6 +718,14 @@ export async function uploadAllSamples(
       ),
       paused: false,
     };
+
+    await clearSyncState();
+
+    await notifySyncCompleted(
+      sessionStats.uploadedImages,
+      sessionStats.skippedImages,
+      sessionStats.failedImages,
+    );
 
     // Only reset after the entire queue has finished.
     resetUploadQueue();
