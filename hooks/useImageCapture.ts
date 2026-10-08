@@ -43,20 +43,13 @@ export function useImageCapture(options: UseImageCaptureOptions) {
   const handleCapture = useCallback(
     (tempUri: string) => {
       const nextIndex = images.length + 1;
-      if (!options.installationId) {
-        return;
-      }
 
       const filePath = saveSampleImage({
         tempUri,
-        installationId: options.installationId,
         imageIndex: nextIndex,
       });
 
-      // console.log('Returned path:', filePath);
-
       setImages((current) => [...current, { uri: filePath, filePath, isNew: true }]);
-      // console.log('Current images:', images);
       setShowCamera(false);
     },
     [images.length, options.installationId],

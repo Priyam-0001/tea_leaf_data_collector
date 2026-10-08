@@ -1,13 +1,6 @@
-/**
- * Sample ID and image naming utilities.
- * ID format: <clone>-T<tree>-L<leaf>-<deviceModel>-<timestamp>
- * Image format: <clone>-T<tree>-L<leaf>-img<n>.jpg
- */
-
-import { formatSampleTimestamp } from './dateFormat';
+import * as Crypto from 'expo-crypto';
 
 export interface SampleIdParts {
-  installationId: string;
   deviceModel: string;
   timestamp?: Date;
 }
@@ -42,31 +35,13 @@ export function sanitizeDeviceModel(model: string): string {
     .toUpperCase() || 'UNKNOWN';
 }
 
-/** Build the shared prefix used in IDs and image names. */
-// export function buildSamplePrefix(parts: Omit<SampleIdParts, 'deviceModel' | 'timestamp'>): string {
-//   const clone = normalizeCloneNumber(parts.cloneNumber);
-//   const tree = formatTreeSegment(parts.treeNumber);
-//   const leaf = formatLeafSegment(parts.leafNumber);
-//   if (!clone || !tree || !leaf) return '';
-//   return `${clone}-${tree}-${leaf}`;
-// }
-
 /** Generate full unique sample ID. */
-export function generateSampleId(parts: SampleIdParts): string {
-  // const prefix = buildSamplePrefix(parts);
-  const installationId = parts.installationId;
-  const device = sanitizeDeviceModel(parts.deviceModel);
-  const timestamp = formatSampleTimestamp(parts.timestamp ?? new Date());
-  return `${installationId}-${device}-${timestamp}`;
+export function generateUuid(): string {
+  return Crypto.randomUUID();
 }
 
 /** Generate image filename for a given index (1-based). */
-export function generateImageFileName(
-  parts: Omit<SampleIdParts, 'deviceModel'>,
-  index: number,
-): string {
-  // const prefix = buildSamplePrefix(parts);
-  const installationId = parts.installationId;
-  const timestamp = formatSampleTimestamp(parts.timestamp ?? new Date())
-  return `${installationId}-${timestamp}-img${index}`;
+export function generateImageFileName( index: number ): string {
+  const fileName = generateUuid();
+  return `${fileName}-img${index}`;
 }

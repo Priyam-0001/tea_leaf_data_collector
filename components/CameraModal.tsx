@@ -41,8 +41,24 @@ export function CameraModal({ visible, onClose, onCapture }: CameraModalProps) {
       setCaptureState('processing');
 
       image = await photo.toImageAsync();
-      const tempPngPath = await image.saveToTemporaryFileAsync('png');
-      // await new Promise(resolve => setTimeout(resolve, 100));
+
+      // const targetHeight = 3072;
+      // const targetWidth = Math.round(
+      //   image.width * (targetHeight / image.height)
+      // );
+
+      // const resizedImage = await image.resizeAsync(
+      //   targetWidth,
+      //   targetHeight
+      // );
+      // console.log(
+      //   'Resized:',
+      //   resizedImage.width,
+      //   'x',
+      //   resizedImage.height
+      // );
+      
+      const tempPngPath = await image.saveToTemporaryFileAsync('jpg');
       onCapture(tempPngPath);
     } catch (error) {
       console.error('Camera capture failed:', error);

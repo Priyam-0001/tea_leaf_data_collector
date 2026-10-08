@@ -13,6 +13,7 @@ export const COLORS = {
   border: '#CCCCCC',
   divider: '#E5E5E5',
 
+  tertiary: '#0032bb',
   danger: '#B71C1C',
   disabled: '#9E9E9E',
 } as const;

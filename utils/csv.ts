@@ -2,6 +2,7 @@ import type { Sample } from '@/types/sample';
 
 const CSV_COLUMNS = [
   'sample_id',
+  'user_id',
   'clone_number',
   'tree_number',
   'leaf_number',
@@ -11,7 +12,6 @@ const CSV_COLUMNS = [
   'meter_reading_2',
   'meter_reading_3',
 
-  'wet_lab_required',
   'wet_lab_completed',
 
   'flush',
@@ -66,6 +66,7 @@ function sampleToRow(sample: Sample): string[] {
 
   return [
     sample.id,
+    sample.userId,
     sample.cloneNumber,
     sample.treeNumber,
     sample.leafNumber,
@@ -75,7 +76,6 @@ function sampleToRow(sample: Sample): string[] {
     sample.meterReading2,
     sample.meterReading3,
 
-    sample.wetLabRequired,
     sample.wetLabCompleted,
 
     sample.flush,

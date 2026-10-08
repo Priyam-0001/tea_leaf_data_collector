@@ -1,6 +1,7 @@
 export const SAMPLES_TABLE = `
 CREATE TABLE IF NOT EXISTS samples (
   id TEXT PRIMARY KEY NOT NULL,
+  user_id TEXT NOT NULL,
 
   -- Sample Information
   clone_number TEXT NOT NULL,
@@ -15,7 +16,7 @@ CREATE TABLE IF NOT EXISTS samples (
 
   -- Collection Information
   flush TEXT NOT NULL,
-  flush_auto_detected INTEGER NOT NULL DEFAULT 0,
+  flush_auto_detected BOOLEAN NOT NULL DEFAULT FALSE,
 
   -- GPS
   gps_latitude REAL,
@@ -27,16 +28,15 @@ CREATE TABLE IF NOT EXISTS samples (
   section_name TEXT NOT NULL,
 
   -- Plant Health
-  healthy INTEGER NOT NULL DEFAULT 0,
-  wilting INTEGER NOT NULL DEFAULT 0,
-  chlorosis INTEGER NOT NULL DEFAULT 0,
-  scorching INTEGER NOT NULL DEFAULT 0,
-  pest_damage INTEGER NOT NULL DEFAULT 0,
-  disease INTEGER NOT NULL DEFAULT 0,
+  healthy BOOLEAN NOT NULL DEFAULT FALSE,
+  wilting BOOLEAN NOT NULL DEFAULT FALSE,
+  chlorosis BOOLEAN NOT NULL DEFAULT FALSE,
+  scorching BOOLEAN NOT NULL DEFAULT FALSE,
+  pest_damage BOOLEAN NOT NULL DEFAULT FALSE,
+  disease BOOLEAN NOT NULL DEFAULT FALSE,
 
   -- Wet Lab
-  wet_lab_required INTEGER NOT NULL DEFAULT 0,
-  wet_lab_completed INTEGER NOT NULL DEFAULT 0,
+  wet_lab_completed BOOLEAN NOT NULL DEFAULT FALSE,
 
   -- Device Information
   device_manufacturer TEXT NOT NULL,
@@ -56,7 +56,7 @@ CREATE TABLE IF NOT EXISTS samples (
 
 export const SAMPLE_IMAGES_TABLE = `
 CREATE TABLE IF NOT EXISTS sample_images (
-  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  id TEXT PRIMARY KEY,
   sample_id TEXT NOT NULL,
   file_path TEXT NOT NULL,
   sort_order INTEGER NOT NULL,

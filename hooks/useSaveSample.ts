@@ -2,9 +2,8 @@ import { useCallback, useState } from 'react';
 
 import { sampleRepository } from '@/database/sampleRepository';
 import { getDeviceInfo } from '@/services/deviceService';
-import { buildSampleId } from '@/services/sampleIdService';
-import type { Sample, SampleFormInput } from '@/types/sample';
 import type { GpsCoordinates } from '@/services/locationService';
+import type { Sample, SampleFormInput } from '@/types/sample';
 
 interface SaveSampleParams extends SampleFormInput {
   images: string[];
@@ -22,16 +21,12 @@ export function useSaveSample() {
     try {
       const { coordinates, ...sampleInput } = input;
       const device = await getDeviceInfo();
-      const sampleId = await buildSampleId();
-
       const sample = await sampleRepository.create({
         ...sampleInput,
 
         meterReading1: parseFloat(input.meterReading1),
         meterReading2: parseFloat(input.meterReading2),
         meterReading3: parseFloat(input.meterReading3),
-
-        id: sampleId,
 
         gpsLatitude: coordinates?.latitude ?? null,
         gpsLongitude: coordinates?.longitude ?? null,

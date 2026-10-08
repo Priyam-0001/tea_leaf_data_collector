@@ -3,8 +3,8 @@ import * as Sharing from 'expo-sharing';
 import { Platform } from 'react-native';
 
 import { sampleRepository } from '@/database/sampleRepository';
-import type { Sample } from '@/types/sample';
 import { deleteSampleImages } from '@/services/imageService';
+import type { Sample } from '@/types/sample';
 import { getCsvExportFilename, samplesToCsv } from '@/utils/csv';
 
 export interface ExportResult {
@@ -82,9 +82,9 @@ export async function exportImages(directory: Directory, samples: Sample[]) {
       try {
         const sourceFile = new File(imageUri);
         const bytes = await sourceFile.bytes();
-        const fileName = imageUri.split('/').pop() || 'none.png';
+        const fileName = imageUri.split('/').pop() || 'none.jpeg';
 
-        const destinationFile = imageDirectory.createFile(fileName, 'image/png');
+        const destinationFile = imageDirectory.createFile(fileName, 'image/jpeg');
         destinationFile.write(bytes);
       } catch (error) {
         console.warn(
