@@ -1,4 +1,11 @@
+import { ActionButton } from '@/components/ActionButton';
+import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
+import { useAuthStore } from '@/store/authStore';
+import { useDeviceStore } from '@/store/deviceStore';
+import { useSampleStore } from '@/store/sampleStore';
 import { router, useFocusEffect } from 'expo-router';
+import { Cloud } from 'lucide-react-native';
+import { useCallback } from 'react';
 import {
   Alert,
   BackHandler,
@@ -7,15 +14,8 @@ import {
   Text,
   View,
 } from 'react-native';
-import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
-import { ActionButton } from '@/components/ActionButton';
-import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
-import { useAuthStore } from '@/store/authStore';
-import { useDeviceStore } from '@/store/deviceStore';
-import { useSampleStore } from '@/store/sampleStore';
 import { ScrollView } from 'react-native-gesture-handler';
-import { useCallback } from 'react';
-import { Cloud } from 'lucide-react-native';
+import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 
 export default function HomeScreen() {
   const deviceInfo = useDeviceStore((state) => state.deviceInfo);

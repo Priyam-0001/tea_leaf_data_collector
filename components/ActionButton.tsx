@@ -27,7 +27,7 @@ export function ActionButton({
   const backgroundColor = VARIANT_COLORS[variant] || COLORS.primary;
 
   const textColor = variant === 'secondary' ? COLORS.text : '#FFFFFF';
-  const borderColor = variant === 'secondary' ? COLORS.border : backgroundColor;
+  const borderColor = variant === 'secondary' ? COLORS.border : '#FFFFFF';
 
   return (
     <Pressable
