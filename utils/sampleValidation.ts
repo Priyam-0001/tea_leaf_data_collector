@@ -29,6 +29,57 @@ export function validateSample(
     };
   }
 
+  if (!sample.gardenName.trim()) {
+    return {
+      valid: false,
+      message: 'Garden Name is required.',
+    };
+  }
+
+  if (!sample.sectionName.trim()) {
+    return {
+      valid: false,
+      message: 'Section Name is required.',
+    };
+  }
+
+  // Validate plant health selection
+  const healthOptions = [
+    sample.healthy,
+    sample.wilting,
+    sample.chlorosis,
+    sample.scorching,
+    sample.pestDamage,
+    sample.disease,
+  ];
+
+  if (!healthOptions.some(Boolean)) {
+    return {
+      valid: false,
+      message:
+        'Please select at least one plant health option (Healthy or a health issue).',
+    };
+  }
+
+  // Prevent selecting Healthy alongside other health issues
+  if (
+    sample.healthy &&
+    (
+      sample.wilting ||
+      sample.chlorosis ||
+      sample.scorching ||
+      sample.pestDamage ||
+      sample.disease
+    )
+  ) {
+    return {
+      valid: false,
+      message:
+        'A sample cannot be marked as "Healthy" and have plant health issues at the same time. Please uncheck either "Healthy" or the selected health issue(s).',
+    };
+  }
+
+  // Validate meter readings
   const readings = [
     {
       name: 'Meter Reading 1',
@@ -56,20 +107,6 @@ export function validateSample(
       return {
         valid: false,
         message: `${reading.name} must be a valid number.`,
-      };
-    }
-
-    if (sample.healthy && (
-      sample.wilting ||
-      sample.chlorosis ||
-      sample.scorching ||
-      sample.pestDamage ||
-      sample.disease
-    )) {
-      return {
-        valid: false,
-        message:
-          'A sample cannot be marked as "Healthy" and have plant health issues at the same time. Please uncheck either "Healthy" or the selected health issue(s).',
       };
     }
   }
