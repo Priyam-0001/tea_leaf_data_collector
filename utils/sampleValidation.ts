@@ -20,12 +20,22 @@ export function validateSample(
       valid: false,
       message: 'Tree Number is required.',
     };
+  } else if (Number(sample.treeNumber.trim()) < 1) {
+    return {
+      valid: false,
+      message: 'Invalid Tree Number.',
+    };
   }
 
   if (!sample.leafNumber.trim()) {
     return {
       valid: false,
       message: 'Leaf Number is required.',
+    };
+  } else if (Number(sample.leafNumber.trim()) < 1) {
+    return {
+      valid: false,
+      message: 'Invalid Leaf Number.',
     };
   }
 
@@ -50,6 +60,11 @@ export function validateSample(
         valid: false,
         message: `${reading.name} is required.`,
       };
+    } else if (Number(reading.value.trim()) < 1 || Number(reading.value.trim()) > 2000) {
+      return {
+        valid: false,
+        message: `${reading.name} must be between 1 to 2000.`,
+      };
     }
 
     if (Number.isNaN(Number(reading.value))) {
@@ -58,20 +73,23 @@ export function validateSample(
         message: `${reading.name} must be a valid number.`,
       };
     }
+  }
 
-    if (sample.healthy && (
-      sample.wilting ||
-      sample.chlorosis ||
-      sample.scorching ||
-      sample.pestDamage ||
-      sample.disease
-    )) {
-      return {
-        valid: false,
-        message:
-          'A sample cannot be marked as "Healthy" and have plant health issues at the same time. Please uncheck either "Healthy" or the selected health issue(s).',
-      };
-    }
+  const hasIssues = sample.wilting || sample.chlorosis || sample.scorching || sample.pestDamage || sample.disease;
+
+  if ((sample.healthy && hasIssues) || (!sample.healthy && !hasIssues)) {
+    return {
+      valid: false,
+      message:
+        'A sample must either be marked as "Healthy" OR have at least one health issue selected, but not both.',
+    };
+  }
+
+  if (!sample.gardenName.trim()) {
+    return {
+      valid: false,
+      message: 'Garden Name is required.',
+    };
   }
 
   return {
