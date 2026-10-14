@@ -11,14 +11,14 @@ export interface CapturedImage {
   isNew: boolean;
 }
 
-interface UseImageCaptureOptions {
-  cloneNumber: string;
-  treeNumber: string;
-  leafNumber: string;
-  installationId?: string;
-}
+// interface UseImageCaptureOptions {
+//   cloneNumber: string;
+//   treeNumber: string;
+//   leafNumber: string;
+//   installationId?: string;
+// }
 
-export function useImageCapture(options: UseImageCaptureOptions) {
+export function useImageCapture() {
   const { hasPermission, requestPermission } = useCameraPermission();
   const [images, setImages] = useState<CapturedImage[]>([]);
   const [showCamera, setShowCamera] = useState(false);
@@ -56,7 +56,7 @@ export function useImageCapture(options: UseImageCaptureOptions) {
       setImages((current) => [...current, { uri: filePath, filePath, isNew: true }]);
       setShowCamera(false);
     },
-    [images.length, options.installationId],
+    [images.length],
   );
 
   const removeImage = useCallback((index: number) => {
