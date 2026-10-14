@@ -39,6 +39,57 @@ export function validateSample(
     };
   }
 
+  if (!sample.gardenName.trim()) {
+    return {
+      valid: false,
+      message: 'Garden Name is required.',
+    };
+  }
+
+  if (!sample.sectionName.trim()) {
+    return {
+      valid: false,
+      message: 'Section Name is required.',
+    };
+  }
+
+  // Validate plant health selection
+  const healthOptions = [
+    sample.healthy,
+    sample.wilting,
+    sample.chlorosis,
+    sample.scorching,
+    sample.pestDamage,
+    sample.disease,
+  ];
+
+  if (!healthOptions.some(Boolean)) {
+    return {
+      valid: false,
+      message:
+        'Please select at least one plant health option (Healthy or a health issue).',
+    };
+  }
+
+  // Prevent selecting Healthy alongside other health issues
+  if (
+    sample.healthy &&
+    (
+      sample.wilting ||
+      sample.chlorosis ||
+      sample.scorching ||
+      sample.pestDamage ||
+      sample.disease
+    )
+  ) {
+    return {
+      valid: false,
+      message:
+        'A sample cannot be marked as "Healthy" and have plant health issues at the same time. Please uncheck either "Healthy" or the selected health issue(s).',
+    };
+  }
+
+  // Validate meter readings
   const readings = [
     {
       name: 'Meter Reading 1',
@@ -73,23 +124,6 @@ export function validateSample(
         message: `${reading.name} must be a valid number.`,
       };
     }
-  }
-
-  const hasIssues = sample.wilting || sample.chlorosis || sample.scorching || sample.pestDamage || sample.disease;
-
-  if ((sample.healthy && hasIssues) || (!sample.healthy && !hasIssues)) {
-    return {
-      valid: false,
-      message:
-        'A sample must either be marked as "Healthy" OR have at least one health issue selected, but not both.',
-    };
-  }
-
-  if (!sample.gardenName.trim()) {
-    return {
-      valid: false,
-      message: 'Garden Name is required.',
-    };
   }
 
   return {

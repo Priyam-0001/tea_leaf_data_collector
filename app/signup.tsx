@@ -1,47 +1,93 @@
 import { router } from 'expo-router';
 import { useState } from 'react';
 import {
-    Alert,
-    KeyboardAvoidingView,
-    Platform,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  Alert,
+  Keyboard,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableWithoutFeedback,
+  View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/components/ActionButton';
 import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
+import { verifyAppLockPassword } from '@/services/appLockService';
 import { useAuthStore } from '@/store/authStore';
 
 export default function SignupScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passcode, setPasscode] = useState('');
+  const [isVerifyingPasscode, setIsVerifyingPasscode] = useState(false);
 
   const signUp = useAuthStore((state) => state.signUp);
   const isLoading = useAuthStore((state) => state.isLoading);
 
+  const isSubmitting = isLoading || isVerifyingPasscode;
+
   const handleSignup = async () => {
-    if (!email.trim() || !password || !passcode) {
+    if (
+      !email.trim() ||
+      !password ||
+      !passcode
+    ) {
       Alert.alert(
         'Missing Information',
-        'Please enter your email, password and passcode.'
+        'Please enter your email, password and passcode.',
       );
       return;
     }
 
+    if (isSubmitting) {
+      return;
+    }
+
     try {
-      // Passcode verification will be added through your backend API.
-      await signUp(email, password);
-      router.replace('/login');
+      // Step 1: Verify the shared research-team passcode.
+      setIsVerifyingPasscode(true);
+
+      let isValidPasscode: boolean;
+
+      try {
+        isValidPasscode = await verifyAppLockPassword(passcode);
+      } finally {
+        setIsVerifyingPasscode(false);
+      }
+
+      if (!isValidPasscode) {
+        Alert.alert(
+          'Invalid Passcode',
+          'The passcode is incorrect. Please contact your research team.',
+        );
+        return;
+      }
+
+      // Step 2: Create the account only after successful verification.
+      await signUp(email.trim(), password);
+
+      setPasscode('');
+
+      Alert.alert(
+        'Registration Successful',
+        'Your account has been created. You can now log in.',
+        [
+          {
+            text: 'Continue',
+            onPress: () => router.replace('/login'),
+          },
+        ],
+      );
     } catch (error) {
       Alert.alert(
         'Signup Failed',
         error instanceof Error
           ? error.message
-          : 'Unable to create account.'
+          : 'Unable to verify the passcode or create your account.',
       );
     }
   };
@@ -51,64 +97,105 @@ export default function SignupScreen() {
       <KeyboardAvoidingView
         style={styles.keyboard}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
       >
-        <View style={styles.container}>
-          <View>
-            <Text style={styles.title}>Tea Leaf Data Collector</Text>
-            <Text style={styles.subtitle}>Create your account</Text>
-          </View>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+          <ScrollView
+            contentContainerStyle={styles.scrollContent}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
+            <View style={styles.container}>
+              <View>
+                <Text style={styles.title}>
+                  Tea Leaf Data Collector
+                </Text>
 
-          <View style={styles.form}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your email"
-              placeholderTextColor={COLORS.textSecondary}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-            />
+                <Text style={styles.subtitle}>
+                  Register as an authorized data collector
+                </Text>
+              </View>
+ 
+              <View style={styles.form}>
+                <Text style={styles.label}>Email</Text>
 
-            <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Create a password"
-              placeholderTextColor={COLORS.textSecondary}
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email"
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={email}
+                  onChangeText={setEmail}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isSubmitting}
+                  returnKeyType="next"
+                />
 
-            <Text style={styles.label}>Passcode</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Enter your passcode"
-              placeholderTextColor={COLORS.textSecondary}
-              value={passcode}
-              onChangeText={setPasscode}
-              secureTextEntry
-              autoCapitalize="none"
-            />
+                <Text style={styles.label}>Password</Text>
 
-            <ActionButton
-              label={isLoading ? 'Creating Account...' : 'Create Account'}
-              onPress={handleSignup}
-            />
-          </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Create a password"
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isSubmitting}
+                  returnKeyType="next"
+                />
 
-          <View style={styles.footer}>
-            <Text style={styles.footerText}>Already have an account?</Text>
+                <Text style={styles.label}>
+                  Research Team Passcode
+                </Text>
 
-            <Text
-              style={styles.link}
-              onPress={() => router.replace('/login')}
-            >
-              Login
-            </Text>
-          </View>
-        </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter the shared passcode"
+                  placeholderTextColor={COLORS.textSecondary}
+                  value={passcode}
+                  onChangeText={setPasscode}
+                  secureTextEntry
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  editable={!isSubmitting}
+                  returnKeyType="done"
+                  onSubmitEditing={handleSignup}
+                />
+
+                <ActionButton
+                  label={
+                    isVerifyingPasscode
+                      ? 'Verifying Passcode...'
+                      : isLoading
+                        ? 'Creating Account...'
+                        : 'Register'
+                  }
+                  onPress={handleSignup}
+                />
+              </View>
+
+              <View style={styles.footer}>
+                <Text style={styles.footerText}>
+                  Already registered?
+                </Text>
+
+                <Text
+                  style={styles.link}
+                  onPress={() => {
+                    if (!isSubmitting) {
+                      router.replace('/login');
+                    }
+                  }}
+                >
+                  Login
+                </Text>
+              </View>
+            </View>
+          </ScrollView>
+        </TouchableWithoutFeedback>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
@@ -182,5 +269,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.primary,
     marginTop: SPACING.xs,
+  },
+
+  scrollContent: {
+    flexGrow: 1,
   },
 });
