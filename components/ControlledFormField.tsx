@@ -8,12 +8,14 @@ interface ControlledFormFieldProps extends TextInputProps {
   control: Control<SampleFormInput>;
   name: FieldPath<SampleFormInput>;
   label: string;
+  requiredField?: boolean;
 }
 
 export function ControlledFormField({
   control,
   name,
   label,
+  requiredField,
   ...inputProps
 }: ControlledFormFieldProps) {
   return (
@@ -27,6 +29,7 @@ export function ControlledFormField({
           onChangeText={field.onChange}
           onBlur={field.onBlur}
           error={fieldState.error?.message}
+          requiredField={requiredField}
           {...inputProps}
         />
       )}

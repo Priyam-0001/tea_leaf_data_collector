@@ -28,6 +28,7 @@ export function CollectionSection({
         label="Garden Name"
         placeholder="Enter garden name"
         returnKeyType="next"
+        requiredField={true}
       />
 
       <ControlledFormField

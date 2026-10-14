@@ -17,6 +17,7 @@ import {
 interface FormFieldProps extends TextInputProps {
   label: string;
   error?: string;
+  requiredField?: boolean;
 }
 
 export function FormField({
@@ -25,12 +26,16 @@ export function FormField({
   style,
   editable = true,
   multiline,
+  requiredField = false,
   ...inputProps
 }: FormFieldProps) {
   return (
     <View style={styles.container}>
       <Text style={styles.label}>
-        {label}
+        {label} 
+        {requiredField?(
+          <Text style={styles.requiredMark}> *</Text>
+        ): null}
       </Text>
 
       <TextInput
@@ -107,4 +112,7 @@ const styles = StyleSheet.create({
     color: COLORS.danger,
     fontSize: FONT_SIZES.helper,
   },
+  requiredMark: {
+    color: 'red',
+  }
 });

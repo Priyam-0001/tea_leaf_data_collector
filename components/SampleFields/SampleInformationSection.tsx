@@ -22,6 +22,7 @@ export function SampleInformationSection({
         placeholder="Enter clone number"
         autoCapitalize="characters"
         returnKeyType="next"
+        requiredField={true}
       />
 
       <ControlledFormField
@@ -31,6 +32,7 @@ export function SampleInformationSection({
         placeholder="Enter tree number"
         keyboardType="number-pad"
         returnKeyType="next"
+        requiredField={true}
       />
 
       <ControlledFormField
@@ -40,6 +42,7 @@ export function SampleInformationSection({
         placeholder="Enter leaf number"
         keyboardType="number-pad"
         returnKeyType="next"
+        requiredField={true}
       />
 
       <ControlledDropdownField

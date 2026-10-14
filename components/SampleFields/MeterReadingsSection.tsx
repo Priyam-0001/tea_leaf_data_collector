@@ -20,6 +20,7 @@ export function MeterReadingsSection({
         placeholder="Enter first meter reading"
         keyboardType="decimal-pad"
         returnKeyType="next"
+        requiredField={true}
       />
 
       <ControlledFormField
@@ -29,6 +30,7 @@ export function MeterReadingsSection({
         placeholder="Enter second meter reading"
         keyboardType="decimal-pad"
         returnKeyType="next"
+        requiredField={true}
       />
 
       <ControlledFormField
@@ -38,6 +40,7 @@ export function MeterReadingsSection({
         placeholder="Enter third meter reading"
         keyboardType="decimal-pad"
         returnKeyType="next"
+        requiredField={true}
       />
     </SectionCard>
   );
