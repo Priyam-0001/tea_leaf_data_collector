@@ -24,6 +24,7 @@ import { useLocationCapture } from '@/hooks/useLocation';
 import { useSaveSample } from '@/hooks/useSaveSample';
 import { useAlertStore } from '@/store/alertStore';
 import { useDeviceStore } from '@/store/deviceStore';
+import { useSampleStore } from '@/store/sampleStore';
 import type { SampleFormInput } from '@/types/sample';
 import { toIsoTimestamp } from '@/utils/dateFormat';
 import { validateSample } from '@/utils/sampleValidation';
@@ -47,13 +48,20 @@ export default function AddSampleScreen() {
   const [now] = useState(() => new Date());
   const showAlert = useAlertStore.getState().showAlert;
 
+  const cloneNumber = useSampleStore((state) => state.cloneNumber)
+  const flush = useSampleStore((state) => state.flush)
+  const gardenName = useSampleStore((state) => state.gardenName)
+
+  const setCloneNumber = useSampleStore((state) => state.setCloneNumber)
+  const setFlush = useSampleStore((state) => state.setFlush)
+  const setGardenName = useSampleStore((state) => state.setGardenName)
+
   const {
     control,
     handleSubmit,
-    watch,
   } = useForm<SampleFormInput>({
     defaultValues: {
-      cloneNumber: '',
+      cloneNumber: cloneNumber,
       treeNumber: '',
       leafNumber: '',
 
@@ -63,13 +71,12 @@ export default function AddSampleScreen() {
       meterReading2: '',
       meterReading3: '',
 
-      wetLabRequired: false,
       wetLabCompleted: false,
 
-      flush: 'first_flush',
+      flush: flush,
       flushAutoDetected: false,
 
-      gardenName: '',
+      gardenName: gardenName,
       sectionName: '',
 
       healthy: false,
@@ -83,10 +90,6 @@ export default function AddSampleScreen() {
     },
   });
 
-  const cloneNumber = watch('cloneNumber');
-  const treeNumber = watch('treeNumber');
-  const leafNumber = watch('leafNumber');
-
   const {
     images,
     showCamera,
@@ -96,12 +99,7 @@ export default function AddSampleScreen() {
     removeAndDeleteImage,
     resetImages,
     cleanupNewImages,
-  } = useImageCapture({
-    cloneNumber,
-    treeNumber,
-    leafNumber,
-    installationId: deviceInfo?.installationId,
-  });
+  } = useImageCapture();
 
   // Refresh location whenever screen regains focus (e.g., user comes back from settings)
   useFocusEffect(
@@ -127,6 +125,10 @@ export default function AddSampleScreen() {
   }, []);
 
   const onSubmit = handleSubmit(async (values) => {
+
+    setCloneNumber(values.cloneNumber);
+    setFlush(values.flush);
+    setGardenName(values.gardenName);
 
     // Require valid location coordinates before saving
     if (!coordinates) {

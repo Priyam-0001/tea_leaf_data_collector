@@ -1,12 +1,20 @@
 import { create } from 'zustand';
 
 import { sampleRepository } from '@/database/sampleRepository';
-import type { Sample, SampleSearchField } from '@/types/sample';
+import type { Flush, Sample, SampleSearchField } from '@/types/sample';
 
 interface SampleStore {
   samples: Sample[];
   loading: boolean;
   error: string | null;
+
+  cloneNumber: string;
+  flush: Flush;
+  gardenName: string;
+
+  setCloneNumber: (number: string) => void;
+  setFlush: (flush: Flush) => void;
+  setGardenName: (name: string) => void;
 
   searchQuery: string;
   searchField: SampleSearchField;
@@ -21,6 +29,14 @@ export const useSampleStore = create<SampleStore>((set, get) => ({
   samples: [],
   loading: false,
   error: null,
+
+  cloneNumber: '',
+  flush: 'first_flush',
+  gardenName: '',
+
+  setCloneNumber: (number: string) => { set({ cloneNumber: number }) },
+  setFlush: (currentFlush: Flush) => { set({ flush: currentFlush }) },
+  setGardenName: (name: string) => { set({ gardenName: name }) },
 
   searchQuery: '',
   searchField: 'all',
