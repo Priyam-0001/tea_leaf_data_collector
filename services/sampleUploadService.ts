@@ -17,8 +17,7 @@ import {
 
 import {
   notifySyncCompleted,
-  notifySyncInterrupted,
-  notifySyncPaused,
+  notifySyncPaused
 } from '@/services/syncNotifications';
 
 export interface UploadProgress {
@@ -437,9 +436,13 @@ export async function uploadAllSamples(
     const allSamples =
       await sampleRepository.getAll();
 
+    const samplesWithImages = allSamples.filter(
+      (sample) => sample.images.length > 0,
+    );
+
     if (persistedState) {
       const samplesById = new Map(
-        allSamples.map((sample) => [
+        samplesWithImages.map((sample) => [
           sample.id,
           sample,
         ]),
@@ -488,8 +491,8 @@ export async function uploadAllSamples(
           persistedState.stats.failedSamples,
       };
     } else {
-      // Start a completely new sync.
-      uploadSamples = allSamples;
+      // Start a completely new sync with only samples that contain images.
+      uploadSamples = samplesWithImages;
 
       currentSampleIndex = 0;
       currentImageIndex = 0;
@@ -509,6 +512,15 @@ export async function uploadAllSamples(
 
   const totalSamples = uploadSamples.length;
   const totalImages = getTotalImages(uploadSamples);
+
+  if (totalSamples === 0) {
+    await clearSyncState();
+    resetUploadQueue();
+    return {
+      ...buildProgress(0, 0, '', 0),
+      paused: false,
+    };
+  }
 
   await persistCurrentSyncState(
     totalSamples,
@@ -537,6 +549,13 @@ export async function uploadAllSamples(
         await sampleRepository.getImageRowsBySampleId(
           sample.id,
         );
+
+      // Do not sync sample if it has no images.
+      if (images.length === 0) {
+        currentSampleIndex++;
+        currentImageIndex = 0;
+        continue;
+      }
 
       // ---------------------------------------------------
       // Upload sample metadata
