@@ -71,11 +71,6 @@ export default function ExportScreen() {
             label="Export Records"
             onPress={handleExport}
           />
-          <ActionButton
-            label="Clear Records"
-            onPress={handleClear}
-            variant="danger"
-          />
           <ActionButton label="Back" onPress={() => router.back()} variant="secondary" />
         </ScrollView>
       </SafeAreaView>

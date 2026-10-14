@@ -73,6 +73,10 @@ export default function HomeScreen() {
     );
   };
 
+  const handleClear = useCallback(() => {
+    router.push('/clear-selection' as never);
+  }, []);
+
   const handleExit = () => {
     if (Platform.OS === 'android') {
       BackHandler.exitApp();
@@ -135,6 +139,11 @@ export default function HomeScreen() {
                 />
               </View>
 
+              <ActionButton
+                label="Clear Records"
+                onPress={handleClear}
+                variant="danger"
+              />
               <View style={[styles.buttons, { flexDirection: 'row' }]}>
                 <ActionButton label="Logout" onPress={handleLogout} style={{ flex: 1 }} variant="danger" />
                 <ActionButton label="Exit" onPress={handleExit} style={{ flex: 1 }} variant="danger" />
