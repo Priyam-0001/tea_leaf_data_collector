@@ -46,13 +46,6 @@ export function validateSample(
     };
   }
 
-  if (!sample.sectionName.trim()) {
-    return {
-      valid: false,
-      message: 'Section Name is required.',
-    };
-  }
-
   // Validate plant health selection
   const healthOptions = [
     sample.healthy,
