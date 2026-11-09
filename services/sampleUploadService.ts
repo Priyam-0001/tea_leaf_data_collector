@@ -5,7 +5,7 @@ import {
   sampleRepository,
 } from '@/database/sampleRepository';
 import { supabase } from '@/database/supabase';
-import { uploadImageToCloudinary } from '@/services/cloudinary';
+import { uploadImageToSupabase } from '@/services/supabaseStorage'; 
 import { useAlertStore } from '@/store/alertStore';
 import { Sample } from '@/types/sample';
 
@@ -313,16 +313,12 @@ async function uploadImage(
     return 'skipped';
   }
 
-  // Upload actual image to Cloudinary.
-  const cloudinaryResult = await uploadImageToCloudinary(
+  // Upload actual image to Supabase Storage.
+  const UploadResult = await uploadImageToSupabase(
     image.filePath,
+    sample.id,
+    image.id
   );
-
-  if (!cloudinaryResult.secure_url) {
-    throw new Error(
-      'Cloudinary upload succeeded but no secure URL was returned.',
-    );
-  }
 
   const {
     data: { session },
@@ -340,7 +336,7 @@ async function uploadImage(
       sample_id: sample.id,
       user_id: session.user.id,
 
-      file_path: cloudinaryResult.secure_url,
+      file_path: UploadResult.publicUrl,
 
       sort_order: image.sortOrder,
     });
