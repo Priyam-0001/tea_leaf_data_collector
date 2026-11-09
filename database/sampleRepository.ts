@@ -4,6 +4,7 @@ import { useAuthStore } from '@/store/authStore';
 
 import type {
   Sample,
+  SampleFilterCriteria,
   SampleImageRow,
   SampleRow,
   SampleSearchField,
@@ -256,48 +257,74 @@ export const sampleRepository = {
     return hydrateSample(row);
   },
 
-  async search(
-    query: string,
-    field: SampleSearchField = 'all',
-  ): Promise<Sample[]> {
-    const trimmed = query.trim();
-
-    if (!trimmed) {
-      return this.getAll();
-    }
-
+  async filter(criteria: SampleFilterCriteria): Promise<Sample[]> {
     const db = await getDatabase();
-    const like = `%${trimmed}%`;
+    const conditions: string[] = [];
+    const params: string[] = [];
 
-    let rows: SampleRow[];
+    const trimmedQuery = criteria.query?.trim();
+    if (trimmedQuery) {
+      const like = `%${trimmedQuery}%`;
+      const field = criteria.field || 'all';
 
-    if (field === 'all') {
-      rows = await db.getAllAsync<SampleRow>(
-        `SELECT * FROM samples
-       WHERE id LIKE ?
+      if (field === 'all') {
+        conditions.push(`(
+          id LIKE ?
           OR clone_number LIKE ?
           OR tree_number LIKE ?
           OR leaf_number LIKE ?
           OR leaf_position LIKE ?
           OR remarks LIKE ?
-       ORDER BY datetime(created_at) DESC`,
-        like,
-        like,
-        like,
-        like,
-        like,
-        like,
-      );
-    } else {
-      rows = await db.getAllAsync<SampleRow>(
-        `SELECT * FROM samples
-       WHERE ${field} LIKE ?
-       ORDER BY datetime(created_at) DESC`,
-        like,
-      );
+          OR garden_name LIKE ?
+        )`);
+        params.push(like, like, like, like, like, like, like);
+      } else {
+        conditions.push(`${field} LIKE ?`);
+        params.push(like);
+      }
     }
 
+    if (criteria.cloneNumber?.trim()) {
+      conditions.push('clone_number LIKE ?');
+      params.push(`%${criteria.cloneNumber.trim()}%`);
+    }
+
+    if (criteria.treeNumber?.trim()) {
+      conditions.push('tree_number LIKE ?');
+      params.push(`%${criteria.treeNumber.trim()}%`);
+    }
+
+    if (criteria.leafNumber?.trim()) {
+      conditions.push('leaf_number LIKE ?');
+      params.push(`%${criteria.leafNumber.trim()}%`);
+    }
+
+    if (criteria.gardenName?.trim()) {
+      conditions.push('garden_name LIKE ?');
+      params.push(`%${criteria.gardenName.trim()}%`);
+    }
+
+    if (criteria.remarks?.trim()) {
+      conditions.push('remarks LIKE ?');
+      params.push(`%${criteria.remarks.trim()}%`);
+    }
+
+    if (conditions.length === 0) {
+      return this.getAll();
+    }
+
+    const whereClause = `WHERE ${conditions.join(' AND ')}`;
+    const sql = `SELECT * FROM samples ${whereClause} ORDER BY datetime(created_at) DESC`;
+
+    const rows = await db.getAllAsync<SampleRow>(sql, ...params);
     return Promise.all(rows.map((row) => hydrateSample(row)));
+  },
+
+  async search(
+    query: string,
+    field: SampleSearchField = 'all',
+  ): Promise<Sample[]> {
+    return this.filter({ query, field });
   },
 
   async update(id: string, updates: SampleUpdateInput): Promise<Sample> {

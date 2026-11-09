@@ -1,7 +1,16 @@
 import { create } from 'zustand';
 
 import { sampleRepository } from '@/database/sampleRepository';
-import type { Flush, Sample, SampleSearchField } from '@/types/sample';
+import type { Flush, Sample, SampleFilterCriteria, SampleSearchField } from '@/types/sample';
+
+const initialFilterCriteria: SampleFilterCriteria = {
+  query: '',
+  cloneNumber: '',
+  treeNumber: '',
+  leafNumber: '',
+  gardenName: '',
+  remarks: '',
+};
 
 interface SampleStore {
   samples: Sample[];
@@ -18,11 +27,15 @@ interface SampleStore {
 
   searchQuery: string;
   searchField: SampleSearchField;
+  filterCriteria: SampleFilterCriteria;
 
-  loadSamples: (query?: string, field?: SampleSearchField) => Promise<void>;
+  loadSamples: () => Promise<void>;
+  loadFilteredSamples: (criteria?: Partial<SampleFilterCriteria>) => Promise<void>;
 
   setSearchQuery: (query: string) => void;
   setSearchField: (field: SampleSearchField) => void;
+  setFilterCriteria: (criteria: Partial<SampleFilterCriteria>) => void;
+  resetFilterCriteria: () => void;
 }
 
 export const useSampleStore = create<SampleStore>((set, get) => ({
@@ -40,13 +53,11 @@ export const useSampleStore = create<SampleStore>((set, get) => ({
 
   searchQuery: '',
   searchField: 'all',
+  filterCriteria: { ...initialFilterCriteria },
 
-  loadSamples: async (query?: string, field?: SampleSearchField) => {
+  loadSamples: async () => {
     const { loading } = get();
     if (loading) return;
-
-    const searchQuery = query ?? get().searchQuery;
-    const searchField = field ?? get().searchField;
 
     set({
       loading: true,
@@ -54,10 +65,7 @@ export const useSampleStore = create<SampleStore>((set, get) => ({
     });
 
     try {
-      const samples =
-        searchQuery.trim().length > 0
-          ? await sampleRepository.search(searchQuery, searchField)
-          : await sampleRepository.getAll();
+      const samples = await sampleRepository.getAll();
       set({
         samples,
         loading: false,
@@ -75,15 +83,68 @@ export const useSampleStore = create<SampleStore>((set, get) => ({
     }
   },
 
-  setSearchQuery: (query: string) => {
+  loadFilteredSamples: async (criteria?: Partial<SampleFilterCriteria>) => {
+    const activeCriteria: SampleFilterCriteria = {
+      ...get().filterCriteria,
+      ...(criteria || {}),
+    };
+
     set({
-      searchQuery: query,
+      loading: true,
+      error: null,
+      filterCriteria: activeCriteria,
+      searchQuery: activeCriteria.query || '',
     });
+
+    try {
+      const samples = await sampleRepository.filter(activeCriteria);
+      set({
+        samples,
+        loading: false,
+      });
+    } catch (error) {
+      const message =
+        error instanceof Error
+          ? error.message
+          : 'Failed to load filtered samples.';
+
+      set({
+        error: message,
+        loading: false,
+      });
+    }
+  },
+
+  setSearchQuery: (query: string) => {
+    set((state) => ({
+      searchQuery: query,
+      filterCriteria: {
+        ...state.filterCriteria,
+        query,
+      },
+    }));
   },
 
   setSearchField: (field: SampleSearchField) => {
     set({
       searchField: field,
+    });
+  },
+
+  setFilterCriteria: (criteria: Partial<SampleFilterCriteria>) => {
+    set((state) => ({
+      filterCriteria: {
+        ...state.filterCriteria,
+        ...criteria,
+      },
+      searchQuery: criteria.query !== undefined ? criteria.query : state.searchQuery,
+    }));
+  },
+
+  resetFilterCriteria: () => {
+    set({
+      filterCriteria: { ...initialFilterCriteria },
+      searchQuery: '',
     });
   },
 }));

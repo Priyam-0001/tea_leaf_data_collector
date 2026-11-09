@@ -1,10 +1,17 @@
 import { router, useFocusEffect } from 'expo-router';
-import { useCallback, useState } from 'react';
+import {
+  ChevronDown,
+  ChevronUp,
+  Filter,
+  RotateCcw,
+} from 'lucide-react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   FlatList,
   Pressable,
   StyleSheet,
   Text,
+  TextInput,
   View,
 } from 'react-native';
 import {
@@ -12,8 +19,6 @@ import {
   SafeAreaView,
 } from 'react-native-safe-area-context';
 
-import { ActionButton } from '@/components/ActionButton';
-import { DropdownField } from '@/components/DropdownField';
 import { SampleSummaryCard } from '@/components/SampleSummaryCard';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { SearchBar } from '@/components/SearchBar';
@@ -21,56 +26,88 @@ import { SearchBar } from '@/components/SearchBar';
 import {
   COLORS,
   FONT_SIZES,
+  RADIUS,
   SPACING,
 } from '@/constants/theme';
 
 import { useSampleStore } from '@/store/sampleStore';
-import type { SampleSearchField } from '@/types/sample';
-
-const searchOptions = [
-  { label: 'All Fields', value: 'all' },
-  { label: 'Sample ID', value: 'id' },
-  { label: 'Clone Number', value: 'clone_number' },
-  { label: 'Tree Number', value: 'tree_number' },
-  { label: 'Leaf Number', value: 'leaf_number' },
-  { label: 'Leaf Position', value: 'leaf_position' },
-  { label: 'Remarks', value: 'remarks' },
-];
+import type { SampleFilterCriteria } from '@/types/sample';
 
 export default function UpdateSampleListScreen() {
   const samples = useSampleStore((state) => state.samples);
   const loading = useSampleStore((state) => state.loading);
-  const searchQuery = useSampleStore((state) => state.searchQuery);
-  const searchField = useSampleStore((state) => state.searchField);
-  const loadSamples = useSampleStore((state) => state.loadSamples);
-  const setSearchQuery = useSampleStore((state) => state.setSearchQuery);
-  const setSearchField = useSampleStore((state) => state.setSearchField);
+  const filterCriteria = useSampleStore((state) => state.filterCriteria);
+  const setFilterCriteria = useSampleStore((state) => state.setFilterCriteria);
+  const resetFilterCriteria = useSampleStore((state) => state.resetFilterCriteria);
+  const loadFilteredSamples = useSampleStore((state) => state.loadFilteredSamples);
+
   const [activePanel, setActivePanel] = useState<'with_images' | 'without_images'>('with_images');
+  const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+
+  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const activeFilterCount = [
+    filterCriteria.query?.trim(),
+    filterCriteria.cloneNumber?.trim(),
+    filterCriteria.treeNumber?.trim(),
+    filterCriteria.leafNumber?.trim(),
+    filterCriteria.gardenName?.trim(),
+  ].filter(Boolean).length;
+
+  const runFilteredQuery = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    debounceTimerRef.current = setTimeout(() => {
+      loadFilteredSamples();
+    }, 200);
+  }, [loadFilteredSamples]);
 
   useFocusEffect(
     useCallback(() => {
-      loadSamples(searchQuery, searchField);
-    }, [loadSamples, searchField, searchQuery]),
+      loadFilteredSamples();
+    }, [loadFilteredSamples]),
   );
 
-  const handleSearch = useCallback(
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleQueryChange = useCallback(
     (text: string) => {
-      setSearchQuery(text);
-      loadSamples(text, searchField);
+      setFilterCriteria({ query: text });
+      runFilteredQuery();
     },
-    [loadSamples, searchField, setSearchQuery],
+    [setFilterCriteria, runFilteredQuery],
   );
 
-  const handleSearchFieldChange = useCallback(
-    (field: string) => {
-      const value = field as SampleSearchField;
-
-      setSearchField(value);
-
-      loadSamples(searchQuery, value);
+  const handleFilterFieldChange = useCallback(
+    (field: keyof SampleFilterCriteria, value: string) => {
+      setFilterCriteria({ [field]: value });
+      runFilteredQuery();
     },
-    [loadSamples, searchQuery, setSearchField],
+    [setFilterCriteria, runFilteredQuery],
   );
+
+  const handleClearFilters = useCallback(() => {
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    resetFilterCriteria();
+    loadFilteredSamples({
+      query: '',
+      cloneNumber: '',
+      treeNumber: '',
+      leafNumber: '',
+      gardenName: '',
+      remarks: '',
+    });
+  }, [resetFilterCriteria, loadFilteredSamples]);
 
   const filteredSamples = samples.filter((sample) =>
     activePanel === 'with_images'
@@ -87,18 +124,154 @@ export default function UpdateSampleListScreen() {
             subtitle="Search and review existing records"
           />
 
-          <DropdownField
-            label="Search By"
-            value={searchField}
-            onValueChange={handleSearchFieldChange}
-            options={searchOptions}
-          />
+          {/* Collapsible Accordion Header / Toggle */}
+          <View style={styles.accordionToggleRow}>
+            <Pressable
+              onPress={() => setIsFiltersOpen((prev) => !prev)}
+              style={[
+                styles.accordionToggleButton,
+                isFiltersOpen && styles.accordionToggleButtonActive,
+                activeFilterCount > 0 && !isFiltersOpen && styles.accordionToggleHasFilters,
+              ]}
+              accessibilityRole="button"
+              accessibilityLabel={isFiltersOpen ? 'Hide attribute filters' : 'Show attribute filters'}
+            >
+              <View style={styles.accordionToggleLeft}>
+                <Filter
+                  size={18}
+                  color={
+                    isFiltersOpen
+                      ? '#FFFFFF'
+                      : activeFilterCount > 0
+                        ? COLORS.primary
+                        : COLORS.textSecondary
+                  }
+                />
+                <Text
+                  style={[
+                    styles.accordionToggleText,
+                    isFiltersOpen && styles.accordionToggleTextActive,
+                    activeFilterCount > 0 && !isFiltersOpen && styles.accordionToggleTextHasFilters,
+                  ]}
+                >
+                  {isFiltersOpen ? 'Hide Filters' : 'Filter by Attributes'}
+                </Text>
 
-          <SearchBar
-            value={searchQuery}
-            onChangeText={handleSearch}
-          />
+                {activeFilterCount > 0 && (
+                  <View
+                    style={[
+                      styles.filterBadge,
+                      isFiltersOpen && styles.filterBadgeActive,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.filterBadgeText,
+                        isFiltersOpen && styles.filterBadgeTextActive,
+                      ]}
+                    >
+                      {activeFilterCount}
+                    </Text>
+                  </View>
+                )}
+              </View>
 
+              {isFiltersOpen ? (
+                <ChevronUp size={20} color={isFiltersOpen ? '#FFFFFF' : COLORS.text} />
+              ) : (
+                <ChevronDown size={20} color={COLORS.textSecondary} />
+              )}
+            </Pressable>
+
+            {activeFilterCount > 0 && (
+              <Pressable
+                onPress={handleClearFilters}
+                style={styles.quickResetButton}
+                accessibilityRole="button"
+                accessibilityLabel="Clear all attribute filters"
+              >
+                <RotateCcw size={15} color={COLORS.danger} />
+                <Text style={styles.quickResetText}>Clear</Text>
+              </Pressable>
+            )}
+          </View>
+
+          {/* Collapsible Accordion Body */}
+          {isFiltersOpen && (
+            <View style={styles.accordionCard}>
+              {/* Quick general search bar (by ID, remarks, etc.) */}
+              <SearchBar
+                value={filterCriteria.query || ''}
+                onChangeText={handleQueryChange}
+                placeholder="Search by ID, remark, or any keyword..."
+              />
+              <View style={styles.gridRow}>
+                <View style={styles.gridCol}>
+                  <Text style={styles.inputLabel}>Clone Number</Text>
+                  <TextInput
+                    style={styles.gridInput}
+                    placeholder="e.g. TV1"
+                    placeholderTextColor={COLORS.textSecondary}
+                    value={filterCriteria.cloneNumber || ''}
+                    onChangeText={(val) => handleFilterFieldChange('cloneNumber', val)}
+                    autoCapitalize="characters"
+                    autoCorrect={false}
+                  />
+                </View>
+
+                <View style={styles.gridCol}>
+                  <Text style={styles.inputLabel}>Tree Number</Text>
+                  <TextInput
+                    style={styles.gridInput}
+                    placeholder="e.g. 12"
+                    placeholderTextColor={COLORS.textSecondary}
+                    value={filterCriteria.treeNumber || ''}
+                    onChangeText={(val) => handleFilterFieldChange('treeNumber', val)}
+                    autoCorrect={false}
+                  />
+                </View>
+              </View>
+
+              <View style={styles.gridRow}>
+                <View style={styles.gridCol}>
+                  <Text style={styles.inputLabel}>Leaf Number</Text>
+                  <TextInput
+                    style={styles.gridInput}
+                    placeholder="e.g. 3"
+                    placeholderTextColor={COLORS.textSecondary}
+                    value={filterCriteria.leafNumber || ''}
+                    onChangeText={(val) => handleFilterFieldChange('leafNumber', val)}
+                    autoCorrect={false}
+                  />
+                </View>
+
+                <View style={styles.gridCol}>
+                  <Text style={styles.inputLabel}>Garden Name</Text>
+                  <TextInput
+                    style={styles.gridInput}
+                    placeholder="e.g. Tocklai"
+                    placeholderTextColor={COLORS.textSecondary}
+                    value={filterCriteria.gardenName || ''}
+                    onChangeText={(val) => handleFilterFieldChange('gardenName', val)}
+                    autoCorrect={false}
+                  />
+                </View>
+              </View>
+
+              {activeFilterCount > 0 && (
+                <Pressable
+                  onPress={handleClearFilters}
+                  style={styles.accordionResetBtn}
+                  accessibilityRole="button"
+                >
+                  <RotateCcw size={14} color={COLORS.danger} />
+                  <Text style={styles.accordionResetBtnText}>Reset All Filters</Text>
+                </Pressable>
+              )}
+            </View>
+          )}
+
+          {/* Toggle between samples with and without images */}
           <View style={styles.toggleRow}>
             <Pressable
               onPress={() => setActivePanel('with_images')}
@@ -137,6 +310,7 @@ export default function UpdateSampleListScreen() {
 
           <Text style={styles.resultTitle}>
             {activePanel === 'with_images' ? 'Samples With Images' : 'Samples Without Images'}
+            {!loading && ` (${filteredSamples.length})`}
           </Text>
 
           <FlatList
@@ -144,6 +318,7 @@ export default function UpdateSampleListScreen() {
             keyExtractor={(item) => item.id}
             style={styles.list}
             contentContainerStyle={styles.listContent}
+            keyboardShouldPersistTaps="handled"
             ListEmptyComponent={
               loading ? (
                 <Text style={styles.empty}>
@@ -151,7 +326,9 @@ export default function UpdateSampleListScreen() {
                 </Text>
               ) : (
                 <Text style={styles.empty}>
-                  No samples found in this panel.
+                  {activeFilterCount > 0 || filterCriteria.query
+                    ? 'No matching samples found for the selected filters.'
+                    : 'No samples found in this panel.'}
                 </Text>
               )
             }
@@ -170,12 +347,12 @@ export default function UpdateSampleListScreen() {
             )}
           />
 
-          <ActionButton
+          {/* <ActionButton
             label="Back"
             variant="secondary"
             onPress={() => router.back()}
             style={styles.back}
-          />
+          /> */}
         </View>
       </SafeAreaView>
     </SafeAreaProvider>
@@ -193,6 +370,149 @@ const styles = StyleSheet.create({
     padding: SPACING.md,
   },
 
+  accordionToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+    marginBottom: SPACING.sm,
+  },
+
+  accordionToggleButton: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: COLORS.surface,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.sm,
+    paddingVertical: SPACING.xs + 2,
+    paddingHorizontal: SPACING.sm,
+  },
+
+  accordionToggleButtonActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+
+  accordionToggleHasFilters: {
+    borderColor: COLORS.primary,
+  },
+
+  accordionToggleLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.xs,
+  },
+
+  accordionToggleText: {
+    fontSize: FONT_SIZES.body,
+    fontWeight: '700',
+    color: COLORS.text,
+  },
+
+  accordionToggleTextActive: {
+    color: '#FFFFFF',
+  },
+
+  accordionToggleTextHasFilters: {
+    color: COLORS.primary,
+  },
+
+  filterBadge: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 5,
+  },
+
+  filterBadgeActive: {
+    backgroundColor: '#FFFFFF',
+  },
+
+  filterBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#FFFFFF',
+  },
+
+  filterBadgeTextActive: {
+    color: COLORS.primary,
+  },
+
+  quickResetButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1.5,
+    borderColor: COLORS.danger,
+    borderRadius: RADIUS.sm,
+    paddingVertical: SPACING.xs + 2,
+    paddingHorizontal: SPACING.sm,
+  },
+
+  quickResetText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.danger,
+  },
+
+  accordionCard: {
+    backgroundColor: COLORS.surface,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.sm,
+    padding: SPACING.sm,
+    marginBottom: SPACING.sm,
+  },
+
+  gridRow: {
+    flexDirection: 'row',
+    gap: SPACING.sm,
+    marginBottom: SPACING.xs,
+  },
+
+  gridCol: {
+    flex: 1,
+  },
+
+  inputLabel: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+    marginBottom: 4,
+  },
+
+  gridInput: {
+    height: 40,
+    borderWidth: 1.5,
+    borderColor: COLORS.border,
+    borderRadius: RADIUS.sm,
+    paddingHorizontal: SPACING.sm,
+    fontSize: 14,
+    color: COLORS.text,
+    backgroundColor: COLORS.background,
+  },
+
+  accordionResetBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingTop: SPACING.xs,
+    paddingBottom: 2,
+  },
+
+  accordionResetBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.danger,
+  },
+
   resultTitle: {
     fontSize: FONT_SIZES.label,
     fontWeight: '700',
@@ -203,7 +523,7 @@ const styles = StyleSheet.create({
   toggleRow: {
     flexDirection: 'row',
     gap: SPACING.sm,
-    marginBottom: SPACING.md,
+    marginBottom: SPACING.sm,
   },
 
   toggleButton: {

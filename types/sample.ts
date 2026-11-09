@@ -24,6 +24,16 @@ export type SampleSearchField =
   | 'leaf_position'
   | 'remarks';
 
+export interface SampleFilterCriteria {
+  query?: string;
+  field?: SampleSearchField;
+  cloneNumber?: string;
+  treeNumber?: string;
+  leafNumber?: string;
+  gardenName?: string;
+  remarks?: string;
+}
+
 export type LeafPosition =
   | '1st_leaf'
   | '2nd_leaf'
