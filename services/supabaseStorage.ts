@@ -72,3 +72,16 @@ export async function uploadImageToSupabase(
     storagePath,
   };
 }
+
+// 4. Delete an image file from the Supabase Storage bucket (used for rollback on failure)
+export async function deleteImageFromSupabase(
+  storagePath: string
+): Promise<void> {
+  const { error } = await supabase.storage
+    .from(BUCKET_NAME)
+    .remove([storagePath]);
+
+  if (error) {
+    console.warn(`Failed to rollback storage file ${storagePath}:`, error.message);
+  }
+}
