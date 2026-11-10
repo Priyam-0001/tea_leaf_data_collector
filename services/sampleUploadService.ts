@@ -5,8 +5,12 @@ import {
   sampleRepository,
 } from '@/database/sampleRepository';
 import { supabase } from '@/database/supabase';
-import { uploadImageToCloudinary } from '@/services/cloudinary';
+import {
+  uploadImageToSupabase,
+  deleteImageFromSupabase
+} from '@/services/supabaseStorage';
 import { useAlertStore } from '@/store/alertStore';
+import type { Session } from '@supabase/supabase-js';
 import { Sample } from '@/types/sample';
 
 import {
@@ -224,71 +228,155 @@ async function imageAlreadyUploaded(
   return !!data;
 }
 
-// ---------------------------------------------------------
-// Upload sample metadata
-// ---------------------------------------------------------
+// --------------------------------------------------------
+// Helper Functions
+// --------------------------------------------------------
 
-async function uploadSample(sample: Sample): Promise<void> {
+// 1. Session Refresh Helper: Validates and refreshes the JWT if expiring within 60s
+async function ensureValidSession(): Promise<Session> {
   const {
-    data: { session },
+    data: { session }
   } = await supabase.auth.getSession();
 
   if (!session?.user) {
     throw new Error('User is not authenticated.');
   }
 
-  const { error } = await supabase
-    .from('samples')
-    .upsert(
-      {
-        id: sample.id,
-        user_id: session.user.id,
+  const now = Math.floor(Date.now() / 1000);
+  if (session.expires_at && session.expires_at - now < 60) {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error || !data.session) {
+      throw new Error('Session expired. Please log in again');
+    }
+    return data.session;
+  }
 
-        clone_number: sample.cloneNumber,
-        tree_number: sample.treeNumber,
-        leaf_number: sample.leafNumber,
-        leaf_position: sample.leafPosition,
+  return session;
+}
 
-        meter_reading_1: sample.meterReading1,
-        meter_reading_2: sample.meterReading2,
-        meter_reading_3: sample.meterReading3,
+// 2. Timeout Helper: Rejects stalled requests on slow or dropping connections
+function withTimeout<T>(
+  promise: PromiseLike<T>,
+  timeoutMs: number,
+  operationName = 'Operation',
+): Promise<T> {
+  let timer: ReturnType<typeof setTimeout>;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => {
+      reject(
+        new Error(
+          `${operationName} time out after ${timeoutMs / 1000}s. Check your connection.`,
+        ),
+      );
+    }, timeoutMs);
+  });
 
-        flush: sample.flush,
-        flush_auto_detected: sample.flushAutoDetected,
+  return Promise.race([promise, timeoutPromise]).finally(() => {
+    clearTimeout(timer);
+  })
+}
 
-        gps_latitude: sample.gpsLatitude,
-        gps_longitude: sample.gpsLongitude,
-        gps_accuracy: sample.gpsAccuracy,
+// 3. Retry Helper: Retries transient failures 3 times with exponential backoff(1.5s, 3s, 6s)
+async function retryWithBackoff<T>(
+  operation: () => Promise<T>,
+  maxRetries = 3,
+  baseDelayMs = 1500,
+): Promise<T> {
+  let attempt = 0;
 
-        garden_name: sample.gardenName,
-        section_name: sample.sectionName,
+  while (true) {
+    try {
+      return await operation();
+    }
+    catch (error) {
+      attempt++;
+      if (attempt >= maxRetries) {
+        throw error;
+      }
 
-        healthy: sample.healthy,
-        wilting: sample.wilting,
-        chlorosis: sample.chlorosis,
-        scorching: sample.scorching,
-        pest_damage: sample.pestDamage,
-        disease: sample.disease,
+      // Do not retry permanent auth errors
+      if (
+        error instanceof Error
+        && (error.message.includes('not authenticated')
+          || error.message.includes('session expired'))
+      ) {
+        throw error;
+      }
 
-        wet_lab_completed: sample.wetLabCompleted,
+      const delay = baseDelayMs * Math.pow(2, attempt - 1);
 
-        device_manufacturer: sample.deviceManufacturer,
-        device_model: sample.deviceModel,
-        os_name: sample.osName,
-        os_version: sample.osVersion,
+      console.warn(
+        `Attempt ${attempt} failed. Retrying in ${delay}ms...`,
+        error instanceof Error ? error.message : error,
+      );
+      await new Promise((resolve) => setTimeout(resolve, delay));
+    }
+  }
+}
 
-        installation_id: sample.installationId,
-        app_version: sample.appVersion,
+// ---------------------------------------------------------
+// Upload sample metadata
+// ---------------------------------------------------------
 
-        remarks: sample.remarks,
+async function uploadSample(sample: Sample): Promise<void> {
+  const session = await ensureValidSession();
 
-        created_at: sample.createdAt,
-        updated_at: sample.updatedAt,
-      },
-      {
-        onConflict: 'id',
-      },
-    );
+  const { error } = await withTimeout(
+    supabase
+      .from('samples')
+      .upsert(
+        {
+          id: sample.id,
+          user_id: session.user.id,
+
+          clone_number: sample.cloneNumber,
+          tree_number: sample.treeNumber,
+          leaf_number: sample.leafNumber,
+          leaf_position: sample.leafPosition,
+
+          meter_reading_1: sample.meterReading1,
+          meter_reading_2: sample.meterReading2,
+          meter_reading_3: sample.meterReading3,
+
+          flush: sample.flush,
+          flush_auto_detected: sample.flushAutoDetected,
+
+          gps_latitude: sample.gpsLatitude,
+          gps_longitude: sample.gpsLongitude,
+          gps_accuracy: sample.gpsAccuracy,
+
+          garden_name: sample.gardenName,
+          section_name: sample.sectionName,
+
+          healthy: sample.healthy,
+          wilting: sample.wilting,
+          chlorosis: sample.chlorosis,
+          scorching: sample.scorching,
+          pest_damage: sample.pestDamage,
+          disease: sample.disease,
+
+          wet_lab_completed: sample.wetLabCompleted,
+
+          device_manufacturer: sample.deviceManufacturer,
+          device_model: sample.deviceModel,
+          os_name: sample.osName,
+          os_version: sample.osVersion,
+
+          installation_id: sample.installationId,
+          app_version: sample.appVersion,
+
+          remarks: sample.remarks,
+
+          created_at: sample.createdAt,
+          updated_at: sample.updatedAt,
+        },
+        {
+          onConflict: 'id',
+        },
+      ),
+    20000,
+    `Upload sample ${sample.id}`,
+  );
 
   if (error) {
     throw new Error(
@@ -313,16 +401,12 @@ async function uploadImage(
     return 'skipped';
   }
 
-  // Upload actual image to Cloudinary.
-  const cloudinaryResult = await uploadImageToCloudinary(
+  // Upload actual image to Supabase Storage.
+  const UploadResult = await uploadImageToSupabase(
     image.filePath,
+    sample.id,
+    image.id
   );
-
-  if (!cloudinaryResult.secure_url) {
-    throw new Error(
-      'Cloudinary upload succeeded but no secure URL was returned.',
-    );
-  }
 
   const {
     data: { session },
@@ -340,7 +424,7 @@ async function uploadImage(
       sample_id: sample.id,
       user_id: session.user.id,
 
-      file_path: cloudinaryResult.secure_url,
+      file_path: UploadResult.publicUrl,
 
       sort_order: image.sortOrder,
     });
@@ -563,7 +647,7 @@ export async function uploadAllSamples(
 
       if (currentImageIndex === 0) {
         try {
-          await uploadSample(sample);
+          await retryWithBackoff(() => uploadSample(sample), 3, 1500);
         } catch (error) {
           sessionStats.failedSamples++;
 
@@ -651,9 +735,10 @@ export async function uploadAllSamples(
         // -------------------------------------------------
 
         try {
-          const result = await uploadImage(
-            sample,
-            image,
+          const result = await retryWithBackoff(
+            () => uploadImage(sample, image),
+            3,
+            1500,
           );
 
           if (result === 'uploaded') {
