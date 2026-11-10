@@ -29,7 +29,7 @@ export default function HomeScreen() {
       if (!loading) {
         loadSamples();
       }
-    }, [loadSamples])
+    }, [loadSamples, loading])
   );
 
   const samplesWithImages = samples.filter(sample => sample.images.length > 0).length;

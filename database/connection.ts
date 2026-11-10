@@ -22,6 +22,7 @@ async function openAndMigrate(): Promise<SQLite.SQLiteDatabase> {
   const db = await SQLite.openDatabaseAsync(DB_NAME);
   await db.execAsync(`
     PRAGMA journal_mode = WAL;
+    PRAGMA foreign_keys = ON;
     ${SAMPLES_TABLE}
     ${SAMPLE_IMAGES_TABLE}
     ${SAMPLE_IMAGES_INDEX}

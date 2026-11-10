@@ -22,8 +22,6 @@ export default function ExportSelectionScreen() {
   const [exporting, setExporting] = useState(false);
 
   const loadSamples = useCallback(async () => {
-    setLoading(true);
-
     try {
       const result = await getExportSelectionData();
       setSamplesWithImages(result.samplesWithImages);

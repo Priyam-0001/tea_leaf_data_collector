@@ -1,5 +1,5 @@
 import { AlertCircle, CheckCircle2, Info, TriangleAlert, X } from 'lucide-react-native';
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 
 import { useAlertStore } from '@/store/alertStore';
@@ -12,7 +12,7 @@ export default function AlertBar() {
     hideAlert,
   } = useAlertStore();
 
-  const translateY = useRef(new Animated.Value(-100)).current;
+  const [translateY] = useState(() => new Animated.Value(-100));
 
   useEffect(() => {
     if (visible) {
@@ -27,7 +27,7 @@ export default function AlertBar() {
         useNativeDriver: true,
       }).start();
     }
-  }, [visible]);
+  }, [visible, translateY]);
 
   if (!visible) return null;
 

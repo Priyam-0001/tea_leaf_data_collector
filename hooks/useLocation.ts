@@ -46,6 +46,8 @@ export function useLocationCapture() {
       const coords = await resolveCoordinates();
       if (!coords) {
         setError('Unable to get GPS coordinates. Please try again.');
+        setCoordinates(null);
+        return null;
       }
       setCoordinates(coords);
       setError(null);

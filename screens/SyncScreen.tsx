@@ -1,3 +1,14 @@
+import { ActionButton } from '@/components/ActionButton';
+import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
+import {
+    pauseUploads,
+    uploadAllSamples,
+} from '@/services/sampleUploadService';
+import { notifySyncStarted } from '@/services/syncNotifications';
+import { getSyncState } from '@/services/syncPersistence';
+import { useAlertStore } from '@/store/alertStore';
+import { useSampleStore } from '@/store/sampleStore';
+import { router, useFocusEffect } from 'expo-router';
 import {
     ArrowLeft,
     CheckCircle2,
@@ -5,29 +16,17 @@ import {
     Pause,
     RefreshCw,
 } from 'lucide-react-native';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import {
     Alert,
     BackHandler,
+    Pressable,
     StyleSheet,
     Text,
-    View,
-    Pressable
+    View
 } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, router } from 'expo-router';
-import { ActionButton } from '@/components/ActionButton';
-import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
-import { useAlertStore } from '@/store/alertStore';
-import { useSampleStore } from '@/store/sampleStore';
-import {
-    pauseUploads,
-    uploadAllSamples,
-} from '@/services/sampleUploadService';
 import { ScrollView } from 'react-native-gesture-handler';
-import { useEffect } from 'react';
-import { getSyncState } from '@/services/syncPersistence';
-import { notifySyncStarted } from '@/services/syncNotifications';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 interface UploadProgress {
     totalSamples: number;

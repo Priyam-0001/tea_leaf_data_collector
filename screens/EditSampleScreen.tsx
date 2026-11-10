@@ -149,25 +149,6 @@ export default function EditSampleScreen() {
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
-  useEffect(() => {
-    const handleHardwareBack = () => {
-      if(editMode){
-        handleCancelEdit();
-      }else{
-        cleanupNewImages();
-        router.back();
-      }
-      return true; 
-    };
-
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      handleHardwareBack
-    );
-
-    return () => backHandler.remove();
-  }, []);
-
   const handleImagePress = useCallback((index: number) => {
     setSelectedImageIndex(index);
     setImageViewerVisible(true);
@@ -217,12 +198,7 @@ export default function EditSampleScreen() {
     removeAndDeleteImage,
     setExistingImages,
     cleanupNewImages,
-  } = useImageCapture({
-    cloneNumber,
-    treeNumber,
-    leafNumber,
-    installationId: sample?.installationId,
-  });
+  } = useImageCapture();
 
   const loadSample = useCallback(async () => {
     if (!id) {
@@ -331,6 +307,26 @@ export default function EditSampleScreen() {
     setRemovedPaths([]);
     setEditMode(false);
   }, [cleanupNewImages, reset, sample, setExistingImages]);
+
+  useFocusEffect(
+    useCallback(() => {
+      const handleHardwareBack = () => {
+        if (editMode) {
+          handleCancelEdit();
+        } else {
+          cleanupNewImages();
+          router.back();
+        }
+        return true;
+      };
+
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        handleHardwareBack
+      );
+      return () => backHandler.remove();
+    }, [editMode, handleCancelEdit, cleanupNewImages])
+  );
 
   const onSubmit = handleSubmit(async (values) => {
     if (!sample) return;

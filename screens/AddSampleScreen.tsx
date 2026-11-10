@@ -108,21 +108,23 @@ export default function AddSampleScreen() {
     }, [captureLocation])
   );
 
-  useEffect(() => {
-    const handleHardwareBack = () => {
+  useFocusEffect(
+    useCallback(() => {
+      const handleHardwareBack = () => {
 
-      cleanupNewImages();
-      router.back();
-      return true;
-    };
+        cleanupNewImages();
+        router.back();
+        return true;
+      };
 
-    const backHandler = BackHandler.addEventListener(
-      'hardwareBackPress',
-      handleHardwareBack
-    );
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        handleHardwareBack
+      );
 
-    return () => backHandler.remove();
-  }, []);
+      return () => backHandler.remove();
+    }, [cleanupNewImages])
+  );
 
   const onSubmit = handleSubmit(async (values) => {
 

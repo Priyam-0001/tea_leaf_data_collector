@@ -42,7 +42,7 @@ export function useImageCapture() {
     }
 
     setShowCamera(true);
-  }, [hasPermission, requestPermission]);
+  }, [hasPermission, requestPermission, showAlert]);
 
   const handleCapture = useCallback(
     (tempUri: string) => {

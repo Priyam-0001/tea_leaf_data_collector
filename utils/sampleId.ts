@@ -43,5 +43,5 @@ export function generateUuid(): string {
 /** Generate image filename for a given index (1-based). */
 export function generateImageFileName( index: number ): string {
   const fileName = generateUuid();
-  return `${fileName}-img${index}`;
+  return `${fileName}-img${index}.jpg`;
 }
