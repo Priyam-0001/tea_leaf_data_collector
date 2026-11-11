@@ -170,7 +170,7 @@ export default function UserGuideScreen() {
             <StepItem
               number="5"
               title="Cloud Sync (When back in office)"
-              desc="Connect to office Wi-Fi, tap 'Cloud Sync' $\rightarrow$ 'Sync Now'. Keep the screen open until all records are uploaded."
+              desc="Connect to office Wi-Fi, tap 'Cloud Sync' → 'Sync Now'. Keep the screen open until all records are uploaded."
             />
           </View>
         </AccordionCard>
@@ -338,7 +338,7 @@ export default function UserGuideScreen() {
             <StepItem
               number="3"
               title="Choose Destination Folder"
-              desc="The Android folder picker will appear. Select a folder (e.g. Documents, Downloads, or an SD card folder) and tap 'Use this folder' $\rightarrow$ 'Allow'."
+              desc="The Android folder picker will appear. Select a folder (e.g. Documents, Downloads, or an SD card folder) and tap 'Use this folder' → 'Allow'."
             />
             <StepItem
               number="4"
@@ -403,7 +403,7 @@ export default function UserGuideScreen() {
           />
           <FaqItem
             q="Cloud sync is taking too long or stalled on an image."
-            a="Check your Wi-Fi or mobile data signal. If stuck, tap 'Pause Sync' $\rightarrow$ verify your connection $\rightarrow$ tap 'Resume Sync'. Remember you can always use 'Export Records' as an immediate offline backup."
+            a="Check your Wi-Fi or mobile data signal. If stuck, tap 'Pause Sync' → verify your connection → tap 'Resume Sync'. Remember you can always use 'Export Records' as an immediate offline backup."
           />
           <FaqItem
             q="When should I use 'Clear Records'?"

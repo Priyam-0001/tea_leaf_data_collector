@@ -134,7 +134,7 @@ Before leaving the field or shutting down for the day, create a local backup:
 1. Tap **"Export Records"** on the Home screen.
 2. Review total samples ready to export, then tap **"Export Records"**.
 3. Select which samples you wish to export (or select all).
-4. The system Storage Access Framework picker will open. Select a destination folder (e.g. `Documents` or an external SD Card) and tap **"Use this folder"** $\rightarrow$ **"Allow"**.
+4. The system Storage Access Framework picker will open. Select a destination folder (e.g. `Documents` or an external SD Card) and tap **"Use this folder"** → **"Allow"**.
 5. The app writes:
    - A standardized CSV file containing all agronomic columns, timestamps, device IDs, and SPAD readings.
    - An image subfolder containing all high-resolution PNG/JPEG photos.
@@ -167,7 +167,7 @@ When returning to the office:
 
 ## 11. Daily Field Readiness Checklist
 
-- [ ] Phone charged $\ge 80\%$.
+- [ ] Phone charged ≥ 80%.
 - [ ] At least 2 GB of internal storage available.
 - [ ] Logged into app while on office Wi-Fi.
 - [ ] White photography board / paper packed.
