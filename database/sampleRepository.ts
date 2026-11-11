@@ -93,6 +93,14 @@ async function hydrateSample(row: SampleRow): Promise<Sample> {
   return rowToSample(row, images);
 }
 
+function getActiveUserId(): string {
+  const session = useAuthStore.getState().session;
+  if (!session?.user) {
+    throw new Error('User is not authenticated.');
+  }
+  return session.user.id;
+}
+
 export type CreateSampleParams = Omit<
   Sample,
   'id' | 'userId' | 'createdAt' | 'updatedAt'
@@ -243,24 +251,28 @@ export const sampleRepository = {
   },
 
   async getAll(): Promise<Sample[]> {
+    const userId = getActiveUserId();
     const db = await getDatabase();
     const rows = await db.getAllAsync<SampleRow>(
-      'SELECT * FROM samples ORDER BY datetime(created_at) DESC',
+      'SELECT * FROM samples WHERE user_id = ? ORDER BY datetime(created_at) DESC',
+      userId,
     );
     return Promise.all(rows.map((row) => hydrateSample(row)));
   },
 
   async getById(id: string): Promise<Sample | null> {
+    const userId = getActiveUserId();
     const db = await getDatabase();
-    const row = await db.getFirstAsync<SampleRow>('SELECT * FROM samples WHERE id = ?', id);
+    const row = await db.getFirstAsync<SampleRow>('SELECT * FROM samples WHERE id = ? AND user_id = ?', id, userId);
     if (!row) return null;
     return hydrateSample(row);
   },
 
   async filter(criteria: SampleFilterCriteria): Promise<Sample[]> {
+    const userId = getActiveUserId();
     const db = await getDatabase();
-    const conditions: string[] = [];
-    const params: string[] = [];
+    const conditions: string[] = ['user_id = ?'];
+    const params: string[] = [userId];
 
     const trimmedQuery = criteria.query?.trim();
     if (trimmedQuery) {
@@ -404,21 +416,54 @@ export const sampleRepository = {
       id,
     );
 
+    // if (updates.images) {
+    //   await db.runAsync(
+    //     'DELETE FROM sample_images WHERE sample_id = ?',
+    //     id,
+    //   );
+
+    //   for (let index = 0; index < merged.images.length; index++) {
+    //     const imageId = generateUuid();
+    //     await db.runAsync(
+    //       `INSERT INTO sample_images
+    //     (id, sample_id, file_path, sort_order)
+    //     VALUES (?, ?, ?, ?)`,
+    //       imageId,
+    //       id,
+    //       merged.images[index],
+    //       index + 1,
+    //     );
+    //   }
+    // }
+
     if (updates.images) {
+      const existingRows = await db.getAllAsync<SampleImageRow>(
+        'SELECT * FROM sample_images WHERE sample_id = ?',
+        id
+      );
+      const existingIdByPath = new Map<string, string>();
+
+      for (const row of existingRows) {
+        existingIdByPath.set(row.file_path, row.id);
+      }
+
       await db.runAsync(
         'DELETE FROM sample_images WHERE sample_id = ?',
-        id,
+        id
       );
 
       for (let index = 0; index < merged.images.length; index++) {
-        const imageId = generateUuid();
+        const path = merged.images[index];
+
+        const imageId = existingIdByPath.get(path) ?? generateUuid();
+
         await db.runAsync(
           `INSERT INTO sample_images
-        (id, sample_id, file_path, sort_order)
-        VALUES (?, ?, ?, ?)`,
+          (id, sample_id, file_path, sort_order)
+          VALUES (?, ?, ?, ?)`,
           imageId,
           id,
-          merged.images[index],
+          path,
           index + 1,
         );
       }
@@ -434,24 +479,20 @@ export const sampleRepository = {
   },
 
   async count(): Promise<number> {
+    const userId = getActiveUserId();
     const db = await getDatabase();
     const result = await db.getFirstAsync<{ count: number }>(
-      'SELECT COUNT(*) as count FROM samples',
+      'SELECT COUNT(*) as count FROM samples WHERE user_id = ?',
+      userId,
     );
     return result?.count ?? 0;
   },
 
   async clear() {
+    const userId = getActiveUserId();
     const db = await getDatabase();
 
-    await db.execAsync(`
-      DELETE FROM samples;
-      DELETE FROM sample_images;
-      DELETE FROM sqlite_sequence
-      WHERE name='samples';
-      DELETE FROM sqlite_sequence
-      WHERE name='sample_images';
-    `);
+    await db.runAsync('DELETE FROM samples WHERE user_id = ?', userId);
   },
 
   async deleteByIds(ids: string[]) {
@@ -459,12 +500,14 @@ export const sampleRepository = {
       return;
     }
 
+    const userId = getActiveUserId();
     const db = await getDatabase();
     const placeholders = ids.map(() => '?').join(', ');
 
     await db.runAsync(
-      `DELETE FROM samples WHERE id IN (${placeholders})`,
-      ...ids,
+      `DELETE FROM samples WHERE id IN (${placeholders}) and user_id = ?`, 
+      ...ids, 
+      userId,
     );
   },
 

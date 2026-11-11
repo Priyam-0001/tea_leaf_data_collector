@@ -138,14 +138,14 @@ export async function clearRecords() {
   samples.forEach((sample) => deleteSampleImages(sample.images));
   await sampleRepository.clear();
 
-  const imageDirectory = new Directory(
-    Paths.document,
-    'sample_images'
-  );
+  // const imageDirectory = new Directory(
+  //   Paths.document,
+  //   'sample_images'
+  // );
 
-  if (imageDirectory.exists) {
-    imageDirectory.delete();
-  }
+  // if (imageDirectory.exists) {
+  //   imageDirectory.delete();
+  // }
 }
 
 export async function clearSelectedRecords(selectedSamples: Sample[]) {
