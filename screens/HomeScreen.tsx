@@ -54,6 +54,7 @@ export default function HomeScreen() {
           style: 'destructive',
           onPress: async () => {
             try {
+              useSampleStore.setState({ samples: [] });
               await signOut();
               router.replace('../login');
             } catch (error) {

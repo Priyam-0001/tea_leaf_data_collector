@@ -2,7 +2,6 @@ import { Session } from '@supabase/supabase-js';
 import { create } from 'zustand';
 
 import { supabase } from '@/database/supabase';
-import { useSampleStore } from './sampleStore';
 
 interface AuthState {
     session: Session | null;
@@ -114,8 +113,6 @@ export const useAuthStore = create<AuthState>((set) => ({
             if (error) {
                 throw error;
             }
-
-            useSampleStore.setState({ samples: []});
 
             set({
                 session: null,
