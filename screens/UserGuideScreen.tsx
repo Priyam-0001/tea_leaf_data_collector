@@ -112,7 +112,7 @@ export default function UserGuideScreen() {
             This application is designed for field collectors and researchers to capture
             high-resolution leaf images paired with SPAD chlorophyll meter readings and
             agronomic metadata for machine learning model development.
-          </p>
+          </Text>
           <View style={styles.supervisorRow}>
             <Info size={14} color="#C8EED5" />
             <Text style={styles.supervisorText}>
