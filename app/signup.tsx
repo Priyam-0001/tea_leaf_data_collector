@@ -16,6 +16,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/components/ActionButton';
 import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
+import packageJson from '@/package.json';
 import { verifyAppLockPassword } from '@/services/appLockService';
 import { useAuthStore } from '@/store/authStore';
 
@@ -24,6 +25,7 @@ export default function SignupScreen() {
   const [password, setPassword] = useState('');
   const [passcode, setPasscode] = useState('');
   const [isVerifyingPasscode, setIsVerifyingPasscode] = useState(false);
+  const appVersion = packageJson.version;
 
   const signUp = useAuthStore((state) => state.signUp);
   const isLoading = useAuthStore((state) => state.isLoading);
@@ -115,7 +117,7 @@ export default function SignupScreen() {
                   Register as an authorized data collector
                 </Text>
               </View>
- 
+
               <View style={styles.form}>
                 <Text style={styles.label}>Email</Text>
 
@@ -192,6 +194,9 @@ export default function SignupScreen() {
                 >
                   Login
                 </Text>
+                <Text style={styles.versionText}>
+                  Version {appVersion}
+                </Text>
               </View>
             </View>
           </ScrollView>
@@ -262,6 +267,12 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: FONT_SIZES.helper,
     color: COLORS.textSecondary,
+  },
+  versionText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 8,
   },
 
   link: {

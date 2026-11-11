@@ -151,9 +151,14 @@ export default function HomeScreen() {
             </View>
 
             {deviceInfo ? (
-              <Text style={styles.deviceInfo}>
-                Device: {deviceInfo.manufacturer} {deviceInfo.model}
-              </Text>
+              <View>
+                <Text style={styles.deviceInfo}>
+                  Device: {deviceInfo.manufacturer} {deviceInfo.model}
+                </Text>
+                <Text style={styles.versionText}>
+                  Version: {deviceInfo.appVersion}
+                </Text>
+              </View>
             ) : null}
           </View>
         </SafeAreaView>
@@ -219,6 +224,12 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: COLORS.textSecondary,
     textAlign: 'center',
+  },
+  versionText: {
+    fontSize: 16,
+    color: COLORS.textSecondary,
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
   syncCard: {
     backgroundColor: COLORS.surface,

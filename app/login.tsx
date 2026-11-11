@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { ActionButton } from '@/components/ActionButton';
 import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
+import packageJson from '@/package.json';
 import { useAuthStore } from '@/store/authStore';
 
 export default function LoginScreen() {
@@ -22,6 +23,7 @@ export default function LoginScreen() {
     const signIn = useAuthStore((state) => state.signIn);
     const resetPassword = useAuthStore((state) => state.resetPassword);
     const isLoading = useAuthStore((state) => state.isLoading);
+    const appVersion = packageJson.version;
 
     const handleLogin = async () => {
         if (!email.trim() || !password) {
@@ -120,6 +122,9 @@ export default function LoginScreen() {
                         >
                             Create Account
                         </Text>
+                        <Text style={styles.versionText}>
+                            Version {appVersion}
+                        </Text>
                     </View>
                 </View>
             </KeyboardAvoidingView>
@@ -188,6 +193,12 @@ const styles = StyleSheet.create({
     footerText: {
         fontSize: FONT_SIZES.body,
         color: COLORS.textSecondary,
+    },
+    versionText: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        textAlign: 'center',
+        marginTop: 8,
     },
 
     link: {

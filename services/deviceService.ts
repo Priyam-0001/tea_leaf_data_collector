@@ -1,3 +1,4 @@
+import packageJson from '@/package.json';
 import Constants from 'expo-constants';
 import * as Device from 'expo-device';
 import * as SecureStore from 'expo-secure-store';
@@ -29,7 +30,7 @@ export async function initializeDeviceInfo(): Promise<DeviceInfo> {
   if (cachedDeviceInfo) return cachedDeviceInfo;
 
   const installationId = await getOrCreateInstallationId();
-  const appVersion = Constants.expoConfig?.version ?? '1.0.0';
+  const appVersion = Constants.expoConfig?.version ?? packageJson.version;
 
   cachedDeviceInfo = {
     manufacturer: Device.manufacturer ?? 'Unknown',
