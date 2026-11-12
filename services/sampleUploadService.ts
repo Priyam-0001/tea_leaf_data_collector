@@ -210,6 +210,73 @@ async function persistCurrentSyncState(
 // Check whether image metadata already exists in Supabase
 // ---------------------------------------------------------
 
+function getStoragePathFromUrl(publicUrl: string): string | null {
+  const marker = '/sample-images/';
+  const idx = publicUrl.indexOf(marker);
+  if (idx !== -1) {
+    return decodeURIComponent(publicUrl.slice(idx + marker.length));
+  }
+  return null;
+}
+
+// Reconciles remote images for a sample that is actively on device.
+// If an image was removed or replaced locally, removes its remote DB row and Storage file.
+// Has zero effect on samples that have already been cleared from the device.
+async function reconcileRemoteImages(
+  sampleId: string,
+  currentLocalImages: SampleImageUploadRow[],
+): Promise<void> {
+  const { data: remoteImages, error } = await supabase
+    .from('sample_images')
+    .select('id, file_path')
+    .eq('sample_id', sampleId);
+
+  if (error) {
+    console.warn(`Failed to query remote images for sample ${sampleId} reconciliation:`, error.message);
+    return;
+  }
+
+  if (!remoteImages || remoteImages.length === 0) {
+    return;
+  }
+
+  const currentLocalIds = new Set(currentLocalImages.map((img) => img.id));
+  const obsoleteRemoteImages = remoteImages.filter(
+    (remote) => !currentLocalIds.has(remote.id),
+  );
+
+  if (obsoleteRemoteImages.length === 0) {
+    return;
+  }
+
+  const obsoleteIds = obsoleteRemoteImages.map((img) => img.id);
+
+  // 1. Delete obsolete records from sample_images table
+  const { error: dbDeleteError } = await supabase
+    .from('sample_images')
+    .delete()
+    .in('id', obsoleteIds);
+
+  if (dbDeleteError) {
+    console.warn(`Failed to delete obsolete remote image rows for sample ${sampleId}:`, dbDeleteError.message);
+  }
+
+  // 2. Delete obsolete files from Supabase Storage
+  const pathsToDelete = obsoleteRemoteImages
+    .map((img) => getStoragePathFromUrl(img.file_path))
+    .filter((path): path is string => Boolean(path));
+
+  if (pathsToDelete.length > 0) {
+    const { error: storageError } = await supabase.storage
+      .from('sample-images')
+      .remove(pathsToDelete);
+
+    if (storageError) {
+      console.warn(`Failed to delete obsolete storage files for sample ${sampleId}:`, storageError.message);
+    }
+  }
+}
+
 async function imageAlreadyUploaded(
   imageId: string,
 ): Promise<boolean> {
@@ -416,7 +483,7 @@ async function uploadImage(
     throw new Error('User is not authenticated.');
   }
 
-  // Save Cloudinary URL + image metadata in Supabase.
+  // Save image metadata in Supabase.
   const { error } = await supabase
     .from('sample_images')
     .insert({
@@ -430,6 +497,7 @@ async function uploadImage(
     });
 
   if (error) {
+    await deleteImageFromSupabase(UploadResult.storagePath);
     throw new Error(
       `Failed to save image metadata: ${error.message}`,
     );
@@ -642,12 +710,13 @@ export async function uploadAllSamples(
       }
 
       // ---------------------------------------------------
-      // Upload sample metadata
+      // Upload sample metadata & reconcile remote images
       // ---------------------------------------------------
 
       if (currentImageIndex === 0) {
         try {
           await retryWithBackoff(() => uploadSample(sample), 3, 1500);
+          await reconcileRemoteImages(sample.id, images);
         } catch (error) {
           sessionStats.failedSamples++;
 

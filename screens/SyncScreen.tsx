@@ -209,10 +209,13 @@ export default function SyncScreen() {
             setPaused(false);
             setCompleted(true);
 
-            if (result.failedSamples > 0) {
+            if (result.failedSamples > 0 || result.failedImages > 0) {
+                const parts: string[] = [];
+                if (result.failedSamples > 0) parts.push(`${result.failedSamples} sample(s)`);
+                if (result.failedImages > 0) parts.push(`${result.failedImages} image(s)`);
                 showAlert(
                     'warning',
-                    `Sync completed with ${result.failedSamples} failed sample(s).`,
+                    `Sync completed with failures: ${parts.join(', ')}.`,
                 );
             } else {
                 showAlert(
@@ -399,7 +402,7 @@ export default function SyncScreen() {
                     </Text>
 
                     <Text style={styles.progressValue}>
-                        {uploadProgress.completedSamples} /{' '}
+                        {uploadProgress.completedSamples + uploadProgress.failedSamples} /{' '}
                         {uploadProgress.totalSamples}
                     </Text>
                 </View>
@@ -476,11 +479,11 @@ export default function SyncScreen() {
                         <Text
                             style={[
                                 styles.resultValue,
-                                uploadProgress.failedSamples > 0 &&
+                                uploadProgress.failedImages > 0 &&
                                 styles.failedValue,
                             ]}
                         >
-                            {uploadProgress.failedSamples}
+                            {uploadProgress.failedImages}
                         </Text>
                     </View>
                 </View>
