@@ -1,9 +1,9 @@
 import { ActionButton } from '@/components/ActionButton';
-import { ScreenHeader } from '@/components/ScreenHeader';
 import { COLORS, FONT_SIZES, RADIUS, SPACING } from '@/constants/theme';
 import { router } from 'expo-router';
 import {
   AlertTriangle,
+  ArrowLeft,
   BookOpen,
   Camera,
   CheckCircle2,
@@ -18,7 +18,6 @@ import {
   Pencil,
   ShieldCheck,
   Smartphone,
-  Trash2,
   Zap,
 } from 'lucide-react-native';
 import React, { useState } from 'react';
@@ -30,14 +29,6 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-
-interface GuideSection {
-  id: string;
-  title: string;
-  badge?: string;
-  icon: React.ReactNode;
-  content: React.ReactNode;
-}
 
 export default function UserGuideScreen() {
   const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
@@ -93,46 +84,79 @@ export default function UserGuideScreen() {
         contentContainerStyle={styles.container}
         showsVerticalScrollIndicator={false}
       >
-        {/* Top Header */}
-        <ScreenHeader
-          title="User Guide & Training"
-          subtitle="Complete field data collection walkthrough"
-        />
+        {/* Navigation & Header */}
+        <View style={styles.headerContainer}>
+          <Pressable
+            onPress={() => router.back()}
+            style={({ pressed }) => [
+              styles.backButton,
+              pressed && styles.backButtonPressed,
+            ]}
+            hitSlop={12}
+            accessibilityRole="button"
+            accessibilityLabel="Back to Home"
+          >
+            <ArrowLeft size={22} color="#1E293B" />
+          </Pressable>
 
-        {/* Supervision & Scientific Purpose Card */}
+          <View style={styles.headerTextGroup}>
+            <View style={styles.headerTagRow}>
+              <View style={styles.headerTag}>
+                <BookOpen size={11} color="#2563EB" />
+                <Text style={styles.headerTagText}>FIELD TRAINING MANUAL</Text>
+              </View>
+            </View>
+            <Text style={styles.headerTitle}>
+              User Guide & <Text style={styles.headerTitleHighlight}>Training</Text>
+            </Text>
+            <Text style={styles.headerSubtitle}>
+              Standardized field protocol & ML dataset guide
+            </Text>
+          </View>
+        </View>
+
+        {/* Supervision & Scientific Purpose Card (Clean, modern academic design) */}
         <View style={styles.heroCard}>
-          <View style={styles.heroHeader}>
-            <View style={styles.heroBadge}>
-              <BookOpen size={16} color="#FFFFFF" />
-              <Text style={styles.heroBadgeText}>Tocklai Tea Research Institute</Text>
+          <View style={styles.heroTopRow}>
+            <View style={styles.instituteBadge}>
+              <Text style={styles.instituteBadgeText}>Tocklai Tea Research Institute</Text>
+            </View>
+            <View style={styles.protocolBadge}>
+              <ShieldCheck size={12} color="#059669" />
+              <Text style={styles.protocolBadgeText}>Official Guide</Text>
             </View>
           </View>
-          <Text style={styles.heroTitle}>Tea Leaf Data Collector</Text>
+
+          <Text style={styles.heroTitle}>Tea Leaf Data Collection Protocol</Text>
           <Text style={styles.heroDescription}>
-            This application is designed for field collectors and researchers to capture
-            high-resolution leaf images paired with SPAD chlorophyll meter readings and
-            agronomic metadata for machine learning model development.
+            Standard field procedure for researchers and collectors to capture high-resolution leaf imagery, triplicate SPAD-502 chlorophyll measurements, and field metadata for ML model training.
           </Text>
-          <View style={styles.supervisorRow}>
-            <Info size={14} color="#C8EED5" />
-            <Text style={styles.supervisorText}>
-              Developed under the supervision of{' '}
-              <Text style={styles.boldText}>Dr. Sangeeta Borchetia</Text> &{' '}
-              <Text style={styles.boldText}>Dr. Prabir Barooah</Text>.
-            </Text>
+
+          {/* Supervisor Card */}
+          <View style={styles.supervisorBox}>
+            <View style={styles.supervisorIconWrapper}>
+              <Info size={15} color="#2563EB" />
+            </View>
+            <View style={styles.supervisorContent}>
+              <Text style={styles.supervisorHeader}>SCIENTIFIC SUPERVISION</Text>
+              <Text style={styles.supervisorNames}>
+                Dr. Sangeeta Borchetia <Text style={styles.supervisorAmp}>&</Text> Dr. Prabir Barooah
+              </Text>
+            </View>
           </View>
         </View>
 
         {/* Quick Action bar */}
         <View style={styles.controlRow}>
-          <Text style={styles.sectionCountText}>9 Training Modules</Text>
+          <View style={styles.modulesCountChip}>
+            <Text style={styles.modulesCountText}>9 MODULES</Text>
+          </View>
           <View style={styles.toggleButtons}>
-            <Pressable onPress={expandAll} style={styles.textBtn}>
-              <Text style={styles.textBtnLabel}>Expand All</Text>
+            <Pressable onPress={expandAll} style={styles.actionChip}>
+              <Text style={styles.actionChipText}>Expand All</Text>
             </Pressable>
-            <Text style={styles.separator}>•</Text>
-            <Pressable onPress={collapseAll} style={styles.textBtn}>
-              <Text style={styles.textBtnLabel}>Collapse All</Text>
+            <Pressable onPress={collapseAll} style={styles.actionChip}>
+              <Text style={styles.actionChipText}>Collapse All</Text>
             </Pressable>
           </View>
         </View>
@@ -142,7 +166,9 @@ export default function UserGuideScreen() {
           id="quickstart"
           title="1. Quick-Start 5-Step Workflow"
           badge="Essential"
-          icon={<Zap size={20} color={COLORS.primary} />}
+          badgeColor="#D97706"
+          icon={<Zap size={19} color="#D97706" />}
+          iconBg="#FEF3C7"
           isExpanded={expandedSections.quickstart}
           onToggle={() => toggleSection('quickstart')}
         >
@@ -179,7 +205,10 @@ export default function UserGuideScreen() {
         <AccordionCard
           id="addSample"
           title="2. Adding a New Sample"
-          icon={<Pencil size={20} color={COLORS.primary} />}
+          badge="Required"
+          badgeColor="#059669"
+          icon={<Pencil size={19} color="#059669" />}
+          iconBg="#ECFDF5"
           isExpanded={expandedSections.addSample}
           onToggle={() => toggleSection('addSample')}
         >
@@ -217,7 +246,9 @@ export default function UserGuideScreen() {
           id="photos"
           title="3. Leaf Photography Guidelines"
           badge="Critical for ML"
-          icon={<Camera size={20} color="#D97706" />}
+          badgeColor="#2563EB"
+          icon={<Camera size={19} color="#2563EB" />}
+          iconBg="#EFF6FF"
           isExpanded={expandedSections.photos}
           onToggle={() => toggleSection('photos')}
         >
@@ -252,7 +283,10 @@ export default function UserGuideScreen() {
         <AccordionCard
           id="meter"
           title="4. Chlorophyll Meter (SPAD) Instructions"
-          icon={<Smartphone size={20} color={COLORS.primary} />}
+          badge="Triplicate"
+          badgeColor="#7C3AED"
+          icon={<Smartphone size={19} color="#7C3AED" />}
+          iconBg="#F5F3FF"
           isExpanded={expandedSections.meter}
           onToggle={() => toggleSection('meter')}
         >
@@ -286,7 +320,10 @@ export default function UserGuideScreen() {
         <AccordionCard
           id="viewUpdate"
           title="5. Reviewing & Editing Samples"
-          icon={<Database size={20} color={COLORS.primary} />}
+          badge="Management"
+          badgeColor="#4F46E5"
+          icon={<Database size={19} color="#4F46E5" />}
+          iconBg="#EEF2FF"
           isExpanded={expandedSections.viewUpdate}
           onToggle={() => toggleSection('viewUpdate')}
         >
@@ -315,7 +352,9 @@ export default function UserGuideScreen() {
           id="export"
           title="6. Data Export (Offline CSV & Images)"
           badge="Crucial Backup"
-          icon={<FileSpreadsheet size={20} color="#0D9488" />}
+          badgeColor="#0D9488"
+          icon={<FileSpreadsheet size={19} color="#0D9488" />}
+          iconBg="#CCFBF1"
           isExpanded={expandedSections.export}
           onToggle={() => toggleSection('export')}
         >
@@ -353,7 +392,9 @@ export default function UserGuideScreen() {
           id="sync"
           title="7. Cloud Synchronization"
           badge="Online Only"
-          icon={<CloudUpload size={20} color={COLORS.tertiary} />}
+          badgeColor="#0284C7"
+          icon={<CloudUpload size={19} color="#0284C7" />}
+          iconBg="#E0F2FE"
           isExpanded={expandedSections.sync}
           onToggle={() => toggleSection('sync')}
         >
@@ -385,7 +426,10 @@ export default function UserGuideScreen() {
         <AccordionCard
           id="troubleshooting"
           title="8. Troubleshooting & FAQ"
-          icon={<AlertTriangle size={20} color="#DC2626" />}
+          badge="Support"
+          badgeColor="#475569"
+          icon={<HelpCircle size={19} color="#475569" />}
+          iconBg="#F1F5F9"
           isExpanded={expandedSections.troubleshooting}
           onToggle={() => toggleSection('troubleshooting')}
         >
@@ -415,7 +459,10 @@ export default function UserGuideScreen() {
         <AccordionCard
           id="bestPractices"
           title="9. Daily Field Checklist"
-          icon={<ShieldCheck size={20} color={COLORS.primary} />}
+          badge="Daily"
+          badgeColor="#16A34A"
+          icon={<CheckCircle2 size={19} color="#16A34A" />}
+          iconBg="#DCFCE7"
           isExpanded={expandedSections.bestPractices}
           onToggle={() => toggleSection('bestPractices')}
         >
@@ -433,9 +480,10 @@ export default function UserGuideScreen() {
         {/* Bottom Back Button */}
         <View style={styles.bottomButtons}>
           <ActionButton
-            label="Back to Home"
+            label="Back to Home Dashboard"
             onPress={() => router.back()}
-            variant="secondary"
+            variant="guide"
+            icon={<ArrowLeft size={20} color="#FFFFFF" />}
           />
         </View>
 
@@ -456,7 +504,9 @@ function AccordionCard({
   id,
   title,
   badge,
+  badgeColor,
   icon,
+  iconBg,
   children,
   isExpanded,
   onToggle,
@@ -464,7 +514,9 @@ function AccordionCard({
   id: string;
   title: string;
   badge?: string;
+  badgeColor?: string;
   icon: React.ReactNode;
+  iconBg?: string;
   children: React.ReactNode;
   isExpanded: boolean;
   onToggle: () => void;
@@ -473,22 +525,26 @@ function AccordionCard({
     <View style={styles.card}>
       <Pressable onPress={onToggle} style={styles.cardHeader}>
         <View style={styles.cardHeaderLeft}>
-          <View style={styles.iconCircle}>{icon}</View>
+          <View style={[styles.iconCircle, iconBg ? { backgroundColor: iconBg } : null]}>
+            {icon}
+          </View>
           <View style={styles.cardHeaderTitles}>
             <View style={styles.titleRow}>
               <Text style={styles.cardTitle}>{title}</Text>
               {badge && (
-                <View style={styles.badgePill}>
-                  <Text style={styles.badgePillText}>{badge}</Text>
+                <View style={[styles.badgePill, badgeColor ? { backgroundColor: `${badgeColor}15` } : null]}>
+                  <Text style={[styles.badgePillText, badgeColor ? { color: badgeColor } : null]}>
+                    {badge}
+                  </Text>
                 </View>
               )}
             </View>
           </View>
         </View>
         {isExpanded ? (
-          <ChevronUp size={20} color={COLORS.textSecondary} />
+          <ChevronUp size={20} color="#64748B" />
         ) : (
-          <ChevronDown size={20} color={COLORS.textSecondary} />
+          <ChevronDown size={20} color="#64748B" />
         )}
       </Pressable>
 
@@ -543,7 +599,7 @@ function FaqItem({ q, a }: { q: string; a: string }) {
 function ChecklistItem({ text }: { text: string }) {
   return (
     <View style={styles.checkRow}>
-      <CheckCircle2 size={18} color={COLORS.primary} />
+      <CheckCircle2 size={18} color="#16A34A" />
       <Text style={styles.checkText}>{text}</Text>
     </View>
   );
@@ -556,70 +612,180 @@ function ChecklistItem({ text }: { text: string }) {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: '#F8FAFC',
   },
   container: {
     padding: SPACING.md,
     paddingBottom: SPACING.xxl,
-    gap: SPACING.md,
+    gap: 14,
   },
 
-  // Hero Card
+  // Navigation & Header
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+    marginTop: 4,
+    marginBottom: 2,
+  },
+  backButton: {
+    width: 42,
+    height: 42,
+    borderRadius: 21,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.06,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  backButtonPressed: {
+    backgroundColor: '#F1F5F9',
+    opacity: 0.8,
+  },
+  headerTextGroup: {
+    flex: 1,
+  },
+  headerTagRow: {
+    flexDirection: 'row',
+    marginBottom: 4,
+  },
+  headerTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 5,
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
+  },
+  headerTagText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: '#1D4ED8',
+    letterSpacing: 0.6,
+  },
+  headerTitle: {
+    fontSize: 23,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: -0.3,
+  },
+  headerTitleHighlight: {
+    color: '#2563EB',
+  },
+  headerSubtitle: {
+    fontSize: 13,
+    color: '#64748B',
+    marginTop: 2,
+  },
+
+  // Hero Card (Clean, modern academic white surface with subtle slate accents)
   heroCard: {
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#FFFFFF',
     borderRadius: RADIUS.lg,
     padding: SPACING.lg,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 3 },
-    shadowRadius: 6,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 8,
+    elevation: 2,
   },
-  heroHeader: {
-    flexDirection: 'row',
-    marginBottom: SPACING.xs,
-  },
-  heroBadge: {
+  heroTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 20,
+    justifyContent: 'space-between',
+    gap: 8,
+    flexWrap: 'wrap',
+    marginBottom: 10,
   },
-  heroBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
+  instituteBadge: {
+    backgroundColor: '#F1F5F9',
+    paddingHorizontal: 9,
+    paddingVertical: 4,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+  },
+  instituteBadgeText: {
+    color: '#334155',
+    fontSize: 11,
     fontWeight: '700',
-    letterSpacing: 0.3,
+  },
+  protocolBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#ECFDF5',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#A7F3D0',
+  },
+  protocolBadgeText: {
+    color: '#065F46',
+    fontSize: 11,
+    fontWeight: '700',
   },
   heroTitle: {
-    color: '#FFFFFF',
-    fontSize: 22,
+    color: '#0F172A',
+    fontSize: 19,
     fontWeight: '800',
-    marginTop: SPACING.xs,
+    letterSpacing: -0.2,
+    marginBottom: 6,
   },
   heroDescription: {
-    color: '#E8F5E9',
-    fontSize: 14,
+    color: '#475569',
+    fontSize: 13.5,
     lineHeight: 20,
-    marginTop: SPACING.xs,
   },
-  supervisorRow: {
+  supervisorBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    marginTop: SPACING.md,
-    paddingTop: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.2)',
+    gap: 10,
+    marginTop: 14,
+    backgroundColor: '#F8FAFC',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    padding: 10,
   },
-  supervisorText: {
-    color: '#C8EED5',
-    fontSize: 12,
+  supervisorIconWrapper: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#EFF6FF',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  supervisorContent: {
     flex: 1,
-    lineHeight: 16,
+  },
+  supervisorHeader: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: '#64748B',
+    letterSpacing: 0.6,
+  },
+  supervisorNames: {
+    fontSize: 12.5,
+    fontWeight: '700',
+    color: '#1E293B',
+    marginTop: 1,
+  },
+  supervisorAmp: {
+    color: '#2563EB',
+    fontWeight: '700',
   },
 
   // Action / Count Bar
@@ -627,13 +793,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingHorizontal: SPACING.xs,
+    marginTop: 2,
+    paddingHorizontal: 2,
   },
-  sectionCountText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-    textTransform: 'uppercase',
+  modulesCountChip: {
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 6,
+  },
+  modulesCountText: {
+    fontSize: 11,
+    fontWeight: '800',
+    color: '#475569',
     letterSpacing: 0.5,
   },
   toggleButtons: {
@@ -641,33 +813,39 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 8,
   },
-  textBtn: {
-    paddingVertical: 2,
-    paddingHorizontal: 4,
+  actionChip: {
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 6,
   },
-  textBtnLabel: {
-    color: COLORS.primary,
-    fontSize: 13,
+  actionChipText: {
+    color: '#2563EB',
+    fontSize: 12,
     fontWeight: '700',
-  },
-  separator: {
-    color: COLORS.border,
   },
 
   // Accordion Card
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#FFFFFF',
     borderRadius: RADIUS.md,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    borderColor: '#E2E8F0',
     overflow: 'hidden',
+    shadowColor: '#0F172A',
+    shadowOpacity: 0.03,
+    shadowOffset: { width: 0, height: 1 },
+    shadowRadius: 4,
+    elevation: 1,
   },
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     padding: SPACING.md,
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#FFFFFF',
   },
   cardHeaderLeft: {
     flexDirection: 'row',
@@ -679,7 +857,7 @@ const styles = StyleSheet.create({
     width: 38,
     height: 38,
     borderRadius: 19,
-    backgroundColor: '#F1F8F1',
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -693,9 +871,9 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
   },
   cardTitle: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '700',
-    color: COLORS.text,
+    color: '#0F172A',
   },
   badgePill: {
     backgroundColor: '#FEF3C7',
@@ -710,22 +888,22 @@ const styles = StyleSheet.create({
   },
   cardBody: {
     padding: SPACING.md,
-    paddingTop: 0,
+    paddingTop: 12,
     borderTopWidth: 1,
-    borderTopColor: COLORS.divider,
-    backgroundColor: '#FAFAFA',
+    borderTopColor: '#F1F5F9',
+    backgroundColor: '#FAFCFF',
   },
 
   // Common typography inside card
   bodyText: {
-    fontSize: 14,
-    color: COLORS.text,
+    fontSize: 13.5,
+    color: '#334155',
     lineHeight: 20,
     marginVertical: SPACING.xs,
   },
   boldText: {
     fontWeight: '700',
-    color: COLORS.text,
+    color: '#0F172A',
   },
 
   // Step item
@@ -736,17 +914,17 @@ const styles = StyleSheet.create({
   stepItem: {
     flexDirection: 'row',
     gap: SPACING.sm,
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#FFFFFF',
     padding: SPACING.sm,
     borderRadius: RADIUS.sm,
     borderWidth: 1,
-    borderColor: COLORS.divider,
+    borderColor: '#E2E8F0',
   },
   stepBadge: {
     width: 26,
     height: 26,
     borderRadius: 13,
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -759,14 +937,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   stepTitle: {
-    fontSize: 14,
+    fontSize: 13.5,
     fontWeight: '700',
-    color: COLORS.text,
+    color: '#0F172A',
     marginBottom: 2,
   },
   stepDesc: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
+    fontSize: 12.5,
+    color: '#475569',
     lineHeight: 18,
   },
 
@@ -784,12 +962,12 @@ const styles = StyleSheet.create({
     width: 6,
     height: 6,
     borderRadius: 3,
-    backgroundColor: COLORS.primary,
+    backgroundColor: '#2563EB',
     marginTop: 7,
   },
   bulletText: {
     fontSize: 13,
-    color: COLORS.text,
+    color: '#334155',
     lineHeight: 19,
     flex: 1,
   },
@@ -810,7 +988,7 @@ const styles = StyleSheet.create({
     marginBottom: 2,
   },
   tipText: {
-    fontSize: 13,
+    fontSize: 12.5,
     color: '#78350F',
     lineHeight: 18,
   },
@@ -825,7 +1003,7 @@ const styles = StyleSheet.create({
     marginTop: SPACING.xs,
   },
   noteText: {
-    fontSize: 13,
+    fontSize: 12.5,
     color: '#166534',
     lineHeight: 18,
   },
@@ -876,22 +1054,22 @@ const styles = StyleSheet.create({
 
   // FAQ
   faqItem: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#FFFFFF',
     padding: SPACING.sm,
     borderRadius: RADIUS.sm,
     borderWidth: 1,
-    borderColor: COLORS.divider,
+    borderColor: '#E2E8F0',
     marginVertical: 4,
   },
   faqQuestion: {
     fontSize: 13,
     fontWeight: '700',
-    color: COLORS.text,
+    color: '#0F172A',
     marginBottom: 4,
   },
   faqAnswer: {
-    fontSize: 13,
-    color: COLORS.textSecondary,
+    fontSize: 12.5,
+    color: '#475569',
     lineHeight: 18,
   },
 
@@ -904,15 +1082,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: COLORS.surface,
+    backgroundColor: '#FFFFFF',
     padding: SPACING.sm,
     borderRadius: RADIUS.sm,
     borderWidth: 1,
-    borderColor: COLORS.divider,
+    borderColor: '#E2E8F0',
   },
   checkText: {
-    fontSize: 13,
-    color: COLORS.text,
+    fontSize: 12.5,
+    color: '#1E293B',
     flex: 1,
     lineHeight: 18,
   },
@@ -924,7 +1102,7 @@ const styles = StyleSheet.create({
   footerNote: {
     textAlign: 'center',
     fontSize: 11,
-    color: COLORS.textSecondary,
+    color: '#64748B',
     marginTop: SPACING.xs,
   },
 });

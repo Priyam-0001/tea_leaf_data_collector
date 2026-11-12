@@ -107,7 +107,12 @@ export default function HomeScreen() {
 
             <View style={styles.buttons}>
               <ActionButton label="Add Sample" onPress={() => router.push('/add-sample')} />
-              <ActionButton label="User Guide & Training" onPress={() => router.push('/user-guide')} variant="secondary" />
+              <ActionButton
+                label="User Guide & Training"
+                onPress={() => router.push('/user-guide')}
+                variant="guide"
+                icon={<BookOpen size={20} color="#FFFFFF" />}
+              />
               <ActionButton label="View/Update Sample" onPress={() => router.push('/update-sample')} />
               <ActionButton label="Export Records" onPress={() => router.push('/export-records')} />
 
