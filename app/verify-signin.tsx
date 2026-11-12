@@ -153,7 +153,7 @@ export default function VerifySigninScreen() {
             <View style={s.topSection}>
               <Image source={require('@/assets/images/logo.png')} style={s.logo} resizeMode="contain" />
               <Text style={s.institute}>Tocklai Tea Research Institute</Text>
-              <Text style={s.appName}>Tocklai Field</Text>
+              <Text style={s.appName}>PAATSUTRA</Text>
             </View>
 
             {/* Email Illustration */}

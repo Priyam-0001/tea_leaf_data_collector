@@ -138,7 +138,7 @@ export default function HomeScreen() {
             resizeMode="contain"
           />
           <Text style={styles.institute}>Tocklai Tea Research Institute</Text>
-          <Text style={styles.appName}>Tocklai Field</Text>
+          <Text style={styles.appName}>PAATSUTRA</Text>
           <Text style={styles.tagline}>Field Research Companion • Offline Mode</Text>
 
           {/* Badges Row */}

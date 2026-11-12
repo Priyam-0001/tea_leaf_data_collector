@@ -175,7 +175,7 @@ export default function LoginScreen() {
                             resizeMode="contain"
                         />
                         <Text style={s.institute}>Tocklai Tea Research Institute</Text>
-                        <Text style={s.appName}>Tocklai Field</Text>
+                        <Text style={s.appName}>PAATSUTRA</Text>
                         <Text style={s.tagline}>Field Research Companion</Text>
 
                         {/* Version badge + User Guide */}

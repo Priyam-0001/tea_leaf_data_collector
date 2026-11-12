@@ -128,7 +128,7 @@ export default function VerifyEmailScreen() {
           </View>
           <Text style={s.successTitle}>Email Verified! 🎉</Text>
           <Text style={s.successSub}>
-            Welcome to Tocklai Field.{'\n'}Taking you to the app…
+            Welcome to PAATSUTRA.{'\n'}Taking you to the app…
           </Text>
           <View style={s.successBadge}>
             <ShieldCheck size={14} color={C.green} />
@@ -168,7 +168,7 @@ export default function VerifyEmailScreen() {
                 resizeMode="contain"
               />
               <Text style={s.institute}>Tocklai Tea Research Institute</Text>
-              <Text style={s.appName}>Tocklai Field</Text>
+              <Text style={s.appName}>PAATSUTRA</Text>
             </View>
 
             {/* ── Email Illustration Card ──────────────────────────────── */}
