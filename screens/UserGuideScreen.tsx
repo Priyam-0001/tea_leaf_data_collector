@@ -184,7 +184,7 @@ export default function UserGuideScreen() {
           onToggle={() => toggleSection('addSample')}
         >
           <Text style={styles.bodyText}>
-            Tap <Text style={styles.boldText}>"Add Sample"</Text> on the home screen.
+            Tap <Text style={styles.boldText}>{"\"Add Sample\""}</Text> on the home screen.
             Complete each section carefully:
           </Text>
 
