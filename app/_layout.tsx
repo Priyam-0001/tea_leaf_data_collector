@@ -72,30 +72,14 @@ function LoadingSplash() {
           },
         ]}
       >
-        <View style={styles.logoRing}>
-          <Image
-            source={require('@/assets/images/logo.png')}
-            style={styles.logo}
-            resizeMode="contain"
-          />
-        </View>
+        <Image
+          source={require('@/assets/images/logo.png')}
+          style={styles.logo}
+          resizeMode="contain"
+        />
 
-        <Text style={styles.instituteText}>Tocklai Tea Research Institute</Text>
-        <Text style={styles.appTitle}>Tocklai Field</Text>
-        <Text style={styles.subtitle}>Welcome to Field Research Companion</Text>
-
-        <View style={styles.loaderRow}>
-          <ActivityIndicator size="small" color={C.gold} />
-          <Text style={styles.initializingText}>Initializing local database…</Text>
-        </View>
+        <Text style={styles.welcomeText}>Welcome Researchers</Text>
       </Animated.View>
-
-      <View style={styles.splashFooter}>
-        <Text style={styles.versionTag}>v {packageJson.version}</Text>
-        <Text style={styles.supervisionTag}>
-          Dr. Sangeeta Borchetia &amp; Dr. Prabir Barooah
-        </Text>
-      </View>
     </View>
   );
 }
@@ -196,82 +180,17 @@ const styles = StyleSheet.create({
   splashContent: {
     alignItems: 'center',
     justifyContent: 'center',
-  },
-  logoRing: {
-    width: 104,
-    height: 104,
-    borderRadius: 52,
-    backgroundColor: C.card,
-    alignItems: 'center',
-    justifyContent: 'center',
-    shadowColor: '#1A3A6E',
-    shadowOpacity: 0.12,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 8,
-    marginBottom: 16,
+    gap: 18,
   },
   logo: {
-    width: 68,
-    height: 68,
+    width: 110,
+    height: 110,
   },
-  instituteText: {
-    fontSize: 10.5,
-    fontWeight: '800',
-    color: C.textMuted,
-    letterSpacing: 1.4,
-    textTransform: 'uppercase',
-    textAlign: 'center',
-    marginBottom: 4,
-  },
-  appTitle: {
-    fontSize: 32,
+  welcomeText: {
+    fontSize: 26,
     fontWeight: '800',
     color: C.navy,
     letterSpacing: 0.3,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 13,
-    color: C.navyMid,
-    marginTop: 4,
-    marginBottom: 24,
-    textAlign: 'center',
-  },
-  loaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: C.card,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 24,
-    gap: 10,
-    shadowColor: '#1A3A6E',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
-  initializingText: {
-    fontSize: 12.5,
-    fontWeight: '600',
-    color: C.navyMid,
-  },
-
-  splashFooter: {
-    position: 'absolute',
-    bottom: 32,
-    alignItems: 'center',
-    gap: 4,
-  },
-  versionTag: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: C.gold,
-  },
-  supervisionTag: {
-    fontSize: 10.5,
-    color: C.textMuted,
     textAlign: 'center',
   },
 
