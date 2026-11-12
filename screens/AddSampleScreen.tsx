@@ -1,9 +1,10 @@
 import { router, useFocusEffect } from 'expo-router';
-import { Camera, CheckCircle2, RotateCw } from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
+import { Camera, CheckCircle2, RotateCw, Sparkles, X } from 'lucide-react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   Alert,
+  Animated,
   BackHandler,
   ScrollView,
   StyleSheet,
@@ -24,6 +25,12 @@ import { SectionCard } from '@/components/SectionCard';
 import { useImageCapture } from '@/hooks/useImageCapture';
 import { useLocationCapture } from '@/hooks/useLocation';
 import { useSaveSample } from '@/hooks/useSaveSample';
+import {
+  getAutoFillValues,
+  getLastSavedClone,
+  saveCloneSnapshot,
+  setLastSavedClone,
+} from '@/hooks/useCloneAutoFill';
 import { useAlertStore } from '@/store/alertStore';
 import { useDeviceStore } from '@/store/deviceStore';
 import { useSampleStore } from '@/store/sampleStore';
@@ -45,7 +52,49 @@ const C = {
   dangerLight: '#FEF2F2',
   border: '#E2E8F0',
   textMuted: '#64748B',
+  gold: '#E5A820',
+  goldLight: '#FFF9E6',
+  goldBorder: '#FDE68A',
 };
+
+// ─── Auto-fill banner component ────────────────────────────────────────────────
+function AutoFillBanner({
+  filledCount,
+  totalCount,
+  onDismiss,
+}: {
+  filledCount: number;
+  totalCount: number;
+  onDismiss: () => void;
+}) {
+  const opacity = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(-8)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.spring(opacity, { toValue: 1, useNativeDriver: true, friction: 8 }),
+      Animated.spring(translateY, { toValue: 0, useNativeDriver: true, friction: 8 }),
+    ]).start();
+  }, []);
+
+  return (
+    <Animated.View style={[styles.autoFillBanner, { opacity, transform: [{ translateY }] }]}>
+      <View style={styles.autoFillBannerLeft}>
+        <Sparkles size={16} color={C.gold} />
+        <View style={styles.autoFillBannerText}>
+          <Text style={styles.autoFillBannerTitle}>Smart Auto-Fill Active</Text>
+          <Text style={styles.autoFillBannerSub}>
+            {filledCount} of {totalCount} fields pre-filled from last sample of this clone.
+            Chlorophyll readings are always blank.
+          </Text>
+        </View>
+      </View>
+      <TouchableOpacity onPress={onDismiss} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <X size={16} color={C.gold} />
+      </TouchableOpacity>
+    </Animated.View>
+  );
+}
 
 export default function AddSampleScreen() {
   const deviceInfo = useDeviceStore((state) => state.deviceInfo);
@@ -53,6 +102,13 @@ export default function AddSampleScreen() {
 
   const [imageViewerVisible, setImageViewerVisible] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
+  // Auto-fill state
+  const [autoFillCount, setAutoFillCount] = useState(0);
+  const [totalEligibleCount] = useState(13); // matches AUTO_FILL_CANDIDATES length
+  const [showAutoFillBanner, setShowAutoFillBanner] = useState(false);
+  // Track which clone we applied auto-fill for
+  const autoFilledCloneRef = useRef<string | null>(null);
 
   const {
     coordinates,
@@ -72,7 +128,7 @@ export default function AddSampleScreen() {
   const setFlush = useSampleStore((state) => state.setFlush);
   const setGardenName = useSampleStore((state) => state.setGardenName);
 
-  const { control, handleSubmit } = useForm<SampleFormInput>({
+  const { control, handleSubmit, setValue, watch, reset } = useForm<SampleFormInput>({
     defaultValues: {
       cloneNumber: cloneNumber,
       treeNumber: '',
@@ -95,6 +151,79 @@ export default function AddSampleScreen() {
       remarks: '',
     },
   });
+
+  // ─── Watch clone number for auto-fill logic ─────────────────────────────────
+  const watchedClone = watch('cloneNumber');
+
+  useEffect(() => {
+    if (!watchedClone || watchedClone.trim() === '') {
+      setShowAutoFillBanner(false);
+      autoFilledCloneRef.current = null;
+      return;
+    }
+
+    // Avoid re-running if clone hasn't changed since we last applied fill
+    if (autoFilledCloneRef.current === watchedClone.trim()) return;
+
+    async function attemptAutoFill(clone: string) {
+      const lastClone = await getLastSavedClone();
+
+      if (!lastClone || lastClone.trim() !== clone.trim()) {
+        // Different clone or first time — clear all fields
+        reset({
+          cloneNumber: clone,
+          treeNumber: '',
+          leafNumber: '',
+          leafPosition: '1st_leaf',
+          meterReading1: '',
+          meterReading2: '',
+          meterReading3: '',
+          wetLabCompleted: false,
+          flush: 'first_flush',
+          flushAutoDetected: false,
+          gardenName: '',
+          sectionName: '',
+          healthy: false,
+          wilting: false,
+          chlorosis: false,
+          scorching: false,
+          pestDamage: false,
+          disease: false,
+          remarks: '',
+        });
+        setShowAutoFillBanner(false);
+        autoFilledCloneRef.current = clone;
+        return;
+      }
+
+      // Same clone as last saved — apply random 70% auto-fill
+      const partial = await getAutoFillValues(clone);
+      if (!partial) {
+        setShowAutoFillBanner(false);
+        autoFilledCloneRef.current = clone;
+        return;
+      }
+
+      let filled = 0;
+      for (const [key, value] of Object.entries(partial)) {
+        setValue(key as keyof SampleFormInput, value as never, { shouldDirty: false });
+        filled++;
+      }
+
+      // Always clear chlorophyll readings (safety guard)
+      setValue('meterReading1', '', { shouldDirty: false });
+      setValue('meterReading2', '', { shouldDirty: false });
+      setValue('meterReading3', '', { shouldDirty: false });
+      // Always clear tree number (changes every sample)
+      setValue('treeNumber', '', { shouldDirty: false });
+
+      setAutoFillCount(filled);
+      setShowAutoFillBanner(filled > 0);
+      autoFilledCloneRef.current = clone;
+    }
+
+    attemptAutoFill(watchedClone.trim());
+  }, [watchedClone]);
 
   const {
     images,
@@ -161,6 +290,16 @@ export default function AddSampleScreen() {
       return;
     }
 
+    // ─── Persist clone snapshot for next auto-fill ───────────────────────────
+    await Promise.all([
+      saveCloneSnapshot(values.cloneNumber, values),
+      setLastSavedClone(values.cloneNumber),
+    ]);
+
+    // Reset auto-fill state so a fresh entry on the same clone triggers fill again
+    autoFilledCloneRef.current = null;
+    setShowAutoFillBanner(false);
+
     showAlert('success', 'Sample saved successfully.');
     resetImages();
     router.back();
@@ -184,6 +323,15 @@ export default function AddSampleScreen() {
         />
 
         <View style={styles.sections}>
+          {/* Smart Auto-Fill Banner */}
+          {showAutoFillBanner && (
+            <AutoFillBanner
+              filledCount={autoFillCount}
+              totalCount={totalEligibleCount}
+              onDismiss={() => setShowAutoFillBanner(false)}
+            />
+          )}
+
           {/* Form Fields Sections */}
           <SampleFields control={control} />
 
@@ -314,6 +462,39 @@ const styles = StyleSheet.create({
 
   sections: {
     gap: 18,
+  },
+
+  // ─── Auto-Fill Banner ────────────────────────────────────────────────────────
+  autoFillBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    backgroundColor: C.goldLight,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: C.goldBorder,
+    padding: 14,
+    gap: 8,
+  },
+  autoFillBannerLeft: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 10,
+    flex: 1,
+  },
+  autoFillBannerText: {
+    flex: 1,
+    gap: 2,
+  },
+  autoFillBannerTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#92400E',
+  },
+  autoFillBannerSub: {
+    fontSize: 12,
+    color: '#78350F',
+    lineHeight: 17,
   },
 
   captureBtn: {
