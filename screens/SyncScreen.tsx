@@ -1,3 +1,4 @@
+import * as Network from 'expo-network';
 import { ActionButton } from '@/components/ActionButton';
 import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
 import {
@@ -67,6 +68,7 @@ export default function SyncScreen() {
     const [paused, setPaused] = useState(false);
     const [hasStarted, setHasStarted] = useState(false);
     const [completed, setCompleted] = useState(false);
+    const [isPausing, setIsPausing] = useState(false);
 
     const [uploadProgress, setUploadProgress] =
         useState<UploadProgress>(initialProgress);
@@ -178,6 +180,15 @@ export default function SyncScreen() {
             return;
         }
 
+        const network = await Network.getNetworkStateAsync();
+        if (!network.isConnected || network.isInternetReachable === false) {
+            showAlert(
+                'error',
+                'No internet connection. Please connect to the internet and try again.',
+            );
+            return;
+        }
+
         try {
             setUploading(true);
             setPaused(false);
@@ -197,6 +208,7 @@ export default function SyncScreen() {
 
             if (result.paused) {
                 setPaused(true);
+                setIsPausing(false);
 
                 showAlert(
                     'warning',
@@ -226,6 +238,13 @@ export default function SyncScreen() {
         } catch (error) {
             console.error('SYNC ERROR:', error);
 
+            if (uploadProgress.completedImages > 0) {
+                setPaused(true);
+            } else {
+                setHasStarted(false);
+                setPaused(false);
+            }
+
             showAlert(
                 'error',
                 error instanceof Error
@@ -234,10 +253,12 @@ export default function SyncScreen() {
             );
         } finally {
             setUploading(false);
+            setIsPausing(false);
         }
     };
 
     const handlePause = () => {
+        setIsPausing(true);
         pauseUploads();
 
         showAlert(
@@ -248,6 +269,15 @@ export default function SyncScreen() {
 
     const handleResumeSync = async () => {
         if (uploading) {
+            return;
+        }
+
+        const network = await Network.getNetworkStateAsync();
+        if (!network.isConnected || network.isInternetReachable === false) {
+            showAlert(
+                'error',
+                'No internet connection. Please connect to the internet and try again.',
+            );
             return;
         }
 
@@ -266,6 +296,7 @@ export default function SyncScreen() {
 
             if (result.paused) {
                 setPaused(true);
+                setIsPausing(false);
                 return;
             }
 
@@ -287,6 +318,7 @@ export default function SyncScreen() {
             );
         } finally {
             setUploading(false);
+            setIsPausing(false);
         }
     };
 
@@ -299,6 +331,7 @@ export default function SyncScreen() {
         setCompleted(false);
         setHasStarted(false);
         setPaused(false);
+        setIsPausing(false);
     };
 
     const renderReadyState = () => (
@@ -501,9 +534,9 @@ export default function SyncScreen() {
                         />
                     ) : (
                         <ActionButton
-                            label="Pause Sync"
+                            label={isPausing ? 'Pausing...' : 'Pause Sync'}
                             onPress={handlePause}
-                            disabled={!uploading}
+                            disabled={!uploading || isPausing}
                             variant="secondary"
                             style={styles.mainAction}
                         />

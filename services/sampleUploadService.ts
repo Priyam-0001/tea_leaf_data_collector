@@ -718,12 +718,45 @@ export async function uploadAllSamples(
           await retryWithBackoff(() => uploadSample(sample), 3, 1500);
           await reconcileRemoteImages(sample.id, images);
         } catch (error) {
-          sessionStats.failedSamples++;
-
           console.error(
             `Failed to upload sample ${sample.id}:`,
             error,
           );
+
+          const net = await Network.getNetworkStateAsync();
+          if (!net.isConnected || net.isInternetReachable === false) {
+            useAlertStore.getState().showAlert(
+              'warning',
+              'Internet connection lost. Sync paused. Reconnect to resume.',
+            );
+
+            const progress = buildProgress(
+              totalSamples,
+              totalImages,
+              sample.id,
+              0,
+            );
+
+            await persistCurrentSyncState(
+              totalSamples,
+              totalImages,
+              sample.id,
+              0,
+              'paused',
+            );
+
+            await notifySyncPaused(
+              progress.completedImages,
+              progress.totalImages,
+            );
+
+            return {
+              ...progress,
+              paused: true,
+            };
+          }
+
+          sessionStats.failedSamples++;
 
           // Since the sample itself failed, its images
           // cannot be associated with the cloud sample.
@@ -757,6 +790,39 @@ export async function uploadAllSamples(
         // -------------------------------------------------
 
         if (pauseRequested) {
+          const progress = buildProgress(
+            totalSamples,
+            totalImages,
+            sample.id,
+            currentImageIndex + 1,
+          );
+
+          await persistCurrentSyncState(
+            totalSamples,
+            totalImages,
+            sample.id,
+            currentImageIndex,
+            'paused',
+          );
+
+          await notifySyncPaused(
+            progress.completedImages,
+            progress.totalImages,
+          );
+
+          return {
+            ...progress,
+            paused: true,
+          };
+        }
+
+        const netBeforeImage = await Network.getNetworkStateAsync();
+        if (!netBeforeImage.isConnected || netBeforeImage.isInternetReachable === false) {
+          useAlertStore.getState().showAlert(
+            'warning',
+            'Internet connection lost. Sync paused. Reconnect to resume.',
+          );
+
           const progress = buildProgress(
             totalSamples,
             totalImages,
@@ -820,6 +886,39 @@ export async function uploadAllSamples(
             `Failed to upload image ${image.id} for sample ${sample.id}:`,
             error,
           );
+
+          const net = await Network.getNetworkStateAsync();
+          if (!net.isConnected || net.isInternetReachable === false) {
+            useAlertStore.getState().showAlert(
+              'warning',
+              'Internet connection lost. Sync paused. Reconnect to resume.',
+            );
+
+            const progress = buildProgress(
+              totalSamples,
+              totalImages,
+              sample.id,
+              currentImageIndex + 1,
+            );
+
+            await persistCurrentSyncState(
+              totalSamples,
+              totalImages,
+              sample.id,
+              currentImageIndex,
+              'paused',
+            );
+
+            await notifySyncPaused(
+              progress.completedImages,
+              progress.totalImages,
+            );
+
+            return {
+              ...progress,
+              paused: true,
+            };
+          }
 
           sessionStats.failedImages++;
         }
