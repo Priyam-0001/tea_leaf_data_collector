@@ -1,18 +1,36 @@
 import { router, useFocusEffect } from 'expo-router';
+import { Check, CheckSquare, Square, Trash2 } from 'lucide-react-native';
 import { useCallback, useMemo, useState } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, View } from 'react-native';
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton } from '@/components/ActionButton';
-import { CheckboxRow } from '@/components/CheckboxRow';
-import { ExportSampleSelectionItem } from '@/components/ExportSampleSelectionItem';
 import { ScreenHeader } from '@/components/ScreenHeader';
-import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
 import {
   clearSelectedRecords,
   getExportSelectionData,
 } from '@/services/exportService';
 import type { Sample } from '@/types/sample';
+
+const C = {
+  navy: '#0D1F3C',
+  navyMid: '#1E3A5F',
+  page: '#F0F5FF',
+  card: '#FFFFFF',
+  border: '#E2E8F0',
+  danger: '#DC2626',
+  dangerLight: '#FEF2F2',
+  dangerBorder: '#FECACA',
+  textMuted: '#64748B',
+  blue: '#2563EB',
+};
 
 export default function ClearSelectionScreen() {
   const [samplesWithImages, setSamplesWithImages] = useState<Sample[]>([]);
@@ -29,10 +47,7 @@ export default function ClearSelectionScreen() {
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to load samples.';
       Alert.alert('Load Failed', message, [
-        {
-          text: 'Back',
-          onPress: () => router.back(),
-        },
+        { text: 'Back', onPress: () => router.back() },
       ]);
     } finally {
       setLoading(false);
@@ -42,181 +57,178 @@ export default function ClearSelectionScreen() {
   useFocusEffect(
     useCallback(() => {
       loadSamples();
-    }, [loadSamples]),
+    }, [loadSamples])
   );
 
   const allSamples = useMemo(
     () => [...samplesWithImages, ...samplesWithoutImages],
-    [samplesWithImages, samplesWithoutImages],
+    [samplesWithImages, samplesWithoutImages]
   );
 
   const selectedSamples = useMemo(
     () => allSamples.filter((sample) => selectedSampleIds.includes(sample.id)),
-    [allSamples, selectedSampleIds],
+    [allSamples, selectedSampleIds]
   );
-
-  const allWithImagesSelected =
-    samplesWithImages.length > 0 &&
-    samplesWithImages.every((sample) => selectedSampleIds.includes(sample.id));
-
-  const allWithoutImagesSelected =
-    samplesWithoutImages.length > 0 &&
-    samplesWithoutImages.every((sample) => selectedSampleIds.includes(sample.id));
 
   const handleToggleSample = useCallback((sampleId: string) => {
     setSelectedSampleIds((current) =>
       current.includes(sampleId)
         ? current.filter((id) => id !== sampleId)
-        : [...current, sampleId],
+        : [...current, sampleId]
     );
   }, []);
 
-  const handleToggleSection = useCallback(
-    (sampleIds: string[], value: boolean) => {
-      setSelectedSampleIds((current) => {
-        if (!value) {
-          return current.filter((id) => !sampleIds.includes(id));
-        }
-
-        const next = new Set([...current, ...sampleIds]);
-        return Array.from(next);
-      });
-    },
-    [],
-  );
+  const handleToggleAll = useCallback(() => {
+    if (selectedSampleIds.length === allSamples.length) {
+      setSelectedSampleIds([]);
+    } else {
+      setSelectedSampleIds(allSamples.map((s) => s.id));
+    }
+  }, [allSamples, selectedSampleIds]);
 
   const confirmClear = useCallback(() => {
     Alert.alert(
-      'Clear Selected Records',
-      `This will permanently delete ${selectedSamples.length} selected sample(s) and any stored images linked to them. This action cannot be undone.`,
+      'Permanent Deletion Warning',
+      `Are you sure you want to permanently delete ${selectedSamples.length} record(s) and their attached photos?\n\nThis action CANNOT be undone.`,
       [
+        { text: 'Cancel', style: 'cancel' },
         {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Delete',
+          text: 'Delete Permanently',
           style: 'destructive',
           onPress: async () => {
-            setClearing(true);
-
             try {
-              const result = await clearSelectedRecords(selectedSamples);
-              const remainingCount = allSamples.length - result.clearedCount;
-
-              Alert.alert(
-                'Records Cleared',
-                `Cleared ${result.clearedCount} sample(s).\nRemaining: ${remainingCount} sample(s).`,
-                [
-                  {
-                    text: 'OK',
-                    onPress: () => router.back(),
-                  },
-                ],
-              );
+              setClearing(true);
+              await clearSelectedRecords(selectedSamples);
+              Alert.alert('Deleted', 'Selected records have been cleared from local storage.', [
+                { text: 'OK', onPress: () => router.back() },
+              ]);
             } catch (error) {
               const message = error instanceof Error ? error.message : 'Failed to clear records.';
-              Alert.alert('Error', message);
+              Alert.alert('Clear Failed', message);
             } finally {
               setClearing(false);
             }
           },
         },
-      ],
+      ]
     );
-  }, [allSamples.length, selectedSamples]);
-
-  const handleClear = useCallback(() => {
-    if (selectedSamples.length === 0) {
-      Alert.alert('No samples selected', 'Select at least one sample to clear.');
-      return;
-    }
-
-    confirmClear();
-  }, [confirmClear, selectedSamples.length]);
+  }, [selectedSampleIds, selectedSamples.length]);
 
   return (
     <SafeAreaView style={styles.page}>
-      <ScrollView contentContainerStyle={styles.container}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
         <ScreenHeader
-          title="Select Samples"
-          subtitle="Choose which samples to clear"
+          title="Clear Records"
+          subtitle="Select and permanently remove local sample data"
         />
 
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Samples With Images</Text>
-          <CheckboxRow
-            label={`Select all (${samplesWithImages.length})`}
-            value={allWithImagesSelected}
-            onValueChange={(value) =>
-              handleToggleSection(
-                samplesWithImages.map((sample) => sample.id),
-                value,
-              )
-            }
-            disabled={loading || samplesWithImages.length === 0}
-          />
-
-          {samplesWithImages.length === 0 ? (
-            <Text style={styles.emptyText}>No samples with images are available.</Text>
-          ) : (
-            samplesWithImages.map((sample) => (
-              <ExportSampleSelectionItem
-                key={sample.id}
-                sample={sample}
-                selected={selectedSampleIds.includes(sample.id)}
-                onToggle={() => handleToggleSample(sample.id)}
-              />
-            ))
-          )}
+        {/* Warning Banner */}
+        <View style={styles.warningBanner}>
+          <Trash2 size={18} color={C.danger} />
+          <Text style={styles.warningText}>
+            Selected records and associated photo files will be deleted from device memory.
+          </Text>
         </View>
 
-        <View style={styles.sectionCard}>
-          <Text style={styles.sectionTitle}>Samples Without Images</Text>
-          <CheckboxRow
-            label={`Select all (${samplesWithoutImages.length})`}
-            value={allWithoutImagesSelected}
-            onValueChange={(value) =>
-              handleToggleSection(
-                samplesWithoutImages.map((sample) => sample.id),
-                value,
-              )
-            }
-            disabled={loading || samplesWithoutImages.length === 0}
-          />
+        {/* Bulk Select Row */}
+        {allSamples.length > 0 ? (
+          <View style={styles.selectionBar}>
+            <TouchableOpacity
+              style={styles.toggleAllBtn}
+              onPress={handleToggleAll}
+              activeOpacity={0.7}
+            >
+              {selectedSampleIds.length === allSamples.length ? (
+                <CheckSquare size={18} color={C.navy} />
+              ) : (
+                <Square size={18} color={C.textMuted} />
+              )}
+              <Text style={styles.toggleAllText}>
+                {selectedSampleIds.length === allSamples.length
+                  ? 'Deselect All'
+                  : 'Select All Samples'}
+              </Text>
+            </TouchableOpacity>
 
-          {samplesWithoutImages.length === 0 ? (
-            <Text style={styles.emptyText}>All current samples have images.</Text>
-          ) : (
-            samplesWithoutImages.map((sample) => (
-              <ExportSampleSelectionItem
-                key={sample.id}
-                sample={sample}
-                selected={selectedSampleIds.includes(sample.id)}
-                onToggle={() => handleToggleSample(sample.id)}
-              />
-            ))
-          )}
-        </View>
+            <View style={styles.counterPill}>
+              <Text style={styles.counterText}>
+                {selectedSampleIds.length} / {allSamples.length}
+              </Text>
+            </View>
+          </View>
+        ) : null}
 
-        <Text style={styles.helpText}>
-          You can clear selected samples from either section. Samples with images will also remove
-          their stored image files.
-        </Text>
+        {/* Samples List */}
+        {allSamples.length === 0 ? (
+          <View style={styles.emptyCard}>
+            <Text style={styles.emptyTitle}>
+              {loading ? 'Reading local database…' : 'No Records Available'}
+            </Text>
+            <Text style={styles.emptySub}>
+              {loading
+                ? 'Please wait while samples are loaded.'
+                : 'There are currently no samples stored on this device.'}
+            </Text>
+          </View>
+        ) : (
+          <View style={styles.list}>
+            {allSamples.map((sample) => {
+              const isSelected = selectedSampleIds.includes(sample.id);
+              return (
+                <Pressable
+                  key={sample.id}
+                  onPress={() => handleToggleSample(sample.id)}
+                  style={[
+                    styles.sampleRow,
+                    isSelected ? styles.sampleRowSelected : null,
+                  ]}
+                >
+                  <View style={[styles.checkbox, isSelected ? styles.checkboxActive : null]}>
+                    {isSelected ? <Check size={14} color="#FFFFFF" strokeWidth={3} /> : null}
+                  </View>
 
-        <View style={styles.actions}>
-          <ActionButton
-            label={clearing ? 'Clearing...' : 'Clear Records'}
-            onPress={handleClear}
-            disabled={loading || clearing || selectedSamples.length === 0}
-            variant="danger"
-          />
-          <ActionButton
-            label="Cancel"
+                  <View style={styles.sampleDetails}>
+                    <View style={styles.sampleHeader}>
+                      <Text style={styles.cloneText}>Clone: {sample.cloneNumber || '-'}</Text>
+                      <Text style={styles.photoCount}>
+                        {sample.images?.length || 0} photo(s)
+                      </Text>
+                    </View>
+                    <Text style={styles.subText}>
+                      Tree #{sample.treeNumber || '-'} • Leaf #{sample.leafNumber || '-'}
+                    </Text>
+                    <Text style={styles.idText}>ID: {sample.id.slice(0, 16)}…</Text>
+                  </View>
+                </Pressable>
+              );
+            })}
+          </View>
+        )}
+
+        {/* Action Controls */}
+        <View style={styles.actionSection}>
+          <TouchableOpacity
+            style={[
+              styles.deleteBtn,
+              (selectedSamples.length === 0 || clearing) && styles.deleteBtnDisabled,
+            ]}
+            onPress={confirmClear}
+            disabled={selectedSamples.length === 0 || clearing}
+            activeOpacity={0.85}
+          >
+            <Trash2 size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+            <Text style={styles.deleteBtnText}>
+              {clearing ? 'Deleting Records…' : `Delete (${selectedSamples.length}) Record(s)`}
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.cancelBtn}
             onPress={() => router.back()}
-            variant="secondary"
-            disabled={clearing}
-          />
+            activeOpacity={0.8}
+          >
+            <Text style={styles.cancelBtnText}>Back to Dashboard</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -226,36 +238,185 @@ export default function ClearSelectionScreen() {
 const styles = StyleSheet.create({
   page: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: C.page,
   },
   container: {
-    padding: SPACING.lg,
-    gap: SPACING.md,
-    paddingBottom: SPACING.xl,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 36,
+    gap: 14,
   },
-  sectionCard: {
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    borderRadius: 8,
-    padding: SPACING.lg,
-    backgroundColor: COLORS.surface,
+  warningBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: C.dangerLight,
+    borderWidth: 1.5,
+    borderColor: C.dangerBorder,
+    borderRadius: 16,
+    padding: 14,
   },
-  sectionTitle: {
-    fontSize: FONT_SIZES.sectionTitle,
+  warningText: {
+    flex: 1,
+    fontSize: 12.5,
+    color: '#991B1B',
+    lineHeight: 18,
+    fontWeight: '600',
+  },
+
+  selectionBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: C.card,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1.5,
+    borderColor: C.border,
+  },
+  toggleAllBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  toggleAllText: {
+    fontSize: 13.5,
     fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: SPACING.md,
+    color: C.navy,
   },
-  emptyText: {
-    fontSize: FONT_SIZES.body,
-    color: COLORS.textSecondary,
+  counterPill: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 10,
   },
-  helpText: {
-    fontSize: FONT_SIZES.body,
-    color: COLORS.textSecondary,
-    lineHeight: 24,
+  counterText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.blue,
   },
-  actions: {
-    gap: SPACING.md,
+
+  list: {
+    gap: 10,
+  },
+  sampleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: C.card,
+    borderRadius: 16,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: C.border,
+    gap: 12,
+  },
+  sampleRowSelected: {
+    borderColor: C.danger,
+    backgroundColor: '#FFFDFD',
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#CBD5E1',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#F8FAFC',
+  },
+  checkboxActive: {
+    backgroundColor: C.danger,
+    borderColor: C.danger,
+  },
+  sampleDetails: {
+    flex: 1,
+    gap: 2,
+  },
+  sampleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  cloneText: {
+    fontSize: 14.5,
+    fontWeight: '800',
+    color: C.navy,
+  },
+  photoCount: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: C.textMuted,
+  },
+  subText: {
+    fontSize: 12.5,
+    color: '#334155',
+    fontWeight: '500',
+  },
+  idText: {
+    fontSize: 11,
+    fontFamily: 'monospace',
+    color: '#94A3B8',
+  },
+
+  emptyCard: {
+    backgroundColor: C.card,
+    borderRadius: 18,
+    padding: 28,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: C.border,
+    gap: 6,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: C.navy,
+  },
+  emptySub: {
+    fontSize: 13,
+    color: C.textMuted,
+    textAlign: 'center',
+  },
+
+  actionSection: {
+    gap: 10,
+    marginTop: 8,
+  },
+  deleteBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.danger,
+    borderRadius: 16,
+    height: 56,
+    shadowColor: C.danger,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  deleteBtnDisabled: {
+    backgroundColor: '#94A3B8',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  deleteBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15.5,
+    fontWeight: '800',
+  },
+  cancelBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    backgroundColor: C.card,
+  },
+  cancelBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: C.navyMid,
   },
 });

@@ -1,26 +1,40 @@
 import { PropsWithChildren } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 
-import {
-  COLORS,
-  FONT_SIZES,
-  LAYOUT,
-  RADIUS,
-  SHADOW,
-  SPACING,
-} from '@/constants/theme';
+const C = {
+  navy: '#0D1F3C',
+  card: '#FFFFFF',
+  border: '#E2E8F0',
+  divider: '#EDF2F7',
+};
 
 interface SectionCardProps extends PropsWithChildren {
   title: string;
+  badge?: string;
+  icon?: React.ReactNode;
 }
 
 export function SectionCard({
   title,
+  badge,
+  icon,
   children,
 }: SectionCardProps) {
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>{title}</Text>
+      <View style={styles.header}>
+        <View style={styles.headerLeft}>
+          {icon}
+          <Text style={styles.title} numberOfLines={2}>
+            {title}
+          </Text>
+        </View>
+        {badge ? (
+          <View style={styles.badge}>
+            <Text style={styles.badgeText}>{badge}</Text>
+          </View>
+        ) : null}
+      </View>
 
       <View style={styles.divider} />
 
@@ -33,33 +47,66 @@ export function SectionCard({
 
 const styles = StyleSheet.create({
   card: {
-    backgroundColor: COLORS.surface,
+    backgroundColor: C.card,
+    borderRadius: 22,
+    padding: 20,
+    borderWidth: 1.5,
+    borderColor: C.border,
+    shadowColor: '#1A3A6E',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
+  },
 
-    borderRadius: RADIUS.lg,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
 
-    padding: SPACING.lg,
-
-    // marginBottom: LAYOUT.sectionGap,
-
-    ...SHADOW,
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    flex: 1,
+    flexShrink: 1,
   },
 
   title: {
-    fontSize: FONT_SIZES.sectionTitle,
-    fontWeight: '700',
+    fontSize: 16.5,
+    fontWeight: '800',
+    color: C.navy,
+    letterSpacing: 0.2,
+    flex: 1,
+    flexShrink: 1,
+  },
 
-    color: COLORS.text,
+  badge: {
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#BFDBFE',
+    alignSelf: 'center',
+    flexShrink: 0,
+  },
+
+  badgeText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#2563EB',
   },
 
   divider: {
     height: 1,
-
-    backgroundColor: COLORS.divider,
-
-    marginVertical: SPACING.md,
+    backgroundColor: C.divider,
+    marginVertical: 14,
   },
 
   content: {
-    gap: LAYOUT.fieldGap,
+    gap: 14,
   },
 });

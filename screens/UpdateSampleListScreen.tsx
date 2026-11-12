@@ -4,6 +4,7 @@ import {
   ChevronUp,
   Filter,
   RotateCcw,
+  Search,
 } from 'lucide-react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
@@ -14,24 +15,27 @@ import {
   TextInput,
   View,
 } from 'react-native';
-import {
-  SafeAreaProvider,
-  SafeAreaView,
-} from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { SampleSummaryCard } from '@/components/SampleSummaryCard';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { SearchBar } from '@/components/SearchBar';
 
-import {
-  COLORS,
-  FONT_SIZES,
-  RADIUS,
-  SPACING,
-} from '@/constants/theme';
-
 import { useSampleStore } from '@/store/sampleStore';
 import type { SampleFilterCriteria } from '@/types/sample';
+
+const C = {
+  navy: '#0D1F3C',
+  navyMid: '#1E3A5F',
+  page: '#F0F5FF',
+  card: '#FFFFFF',
+  border: '#E2E8F0',
+  blue: '#2563EB',
+  blueLight: '#EFF6FF',
+  textMuted: '#64748B',
+  textLight: '#94A3B8',
+  danger: '#DC2626',
+};
 
 export default function UpdateSampleListScreen() {
   const samples = useSampleStore((state) => state.samples);
@@ -58,7 +62,6 @@ export default function UpdateSampleListScreen() {
     if (debounceTimerRef.current) {
       clearTimeout(debounceTimerRef.current);
     }
-
     debounceTimerRef.current = setTimeout(() => {
       loadFilteredSamples();
     }, 200);
@@ -67,7 +70,7 @@ export default function UpdateSampleListScreen() {
   useFocusEffect(
     useCallback(() => {
       loadFilteredSamples();
-    }, [loadFilteredSamples]),
+    }, [loadFilteredSamples])
   );
 
   useEffect(() => {
@@ -83,7 +86,7 @@ export default function UpdateSampleListScreen() {
       setFilterCriteria({ query: text });
       runFilteredQuery();
     },
-    [setFilterCriteria, runFilteredQuery],
+    [setFilterCriteria, runFilteredQuery]
   );
 
   const handleFilterFieldChange = useCallback(
@@ -91,7 +94,7 @@ export default function UpdateSampleListScreen() {
       setFilterCriteria({ [field]: value });
       runFilteredQuery();
     },
-    [setFilterCriteria, runFilteredQuery],
+    [setFilterCriteria, runFilteredQuery]
   );
 
   const handleClearFilters = useCallback(() => {
@@ -112,464 +115,364 @@ export default function UpdateSampleListScreen() {
   const filteredSamples = samples.filter((sample) =>
     activePanel === 'with_images'
       ? sample.images.length > 0
-      : sample.images.length === 0,
+      : sample.images.length === 0
   );
 
+  const countWithImages = samples.filter((s) => s.images.length > 0).length;
+  const countWithoutImages = samples.length - countWithImages;
+
   return (
-    <SafeAreaProvider>
-      <SafeAreaView style={styles.page}>
-        <View style={styles.container}>
-          <ScreenHeader
-            title="View/Update Sample"
-            subtitle="Search and review existing records"
-          />
+    <SafeAreaView style={styles.page}>
+      <View style={styles.container}>
+        <ScreenHeader
+          title="View / Update Samples"
+          subtitle="Search, review, and modify field sample records"
+        />
 
-          {/* Collapsible Accordion Header / Toggle */}
-          <View style={styles.accordionToggleRow}>
-            <Pressable
-              onPress={() => setIsFiltersOpen((prev) => !prev)}
+        {/* Tab Filter Bar: With Images vs Without Images */}
+        <View style={styles.tabContainer}>
+          <Pressable
+            onPress={() => setActivePanel('with_images')}
+            style={[
+              styles.tabBtn,
+              activePanel === 'with_images' ? styles.tabBtnActive : null,
+            ]}
+          >
+            <Text
               style={[
-                styles.accordionToggleButton,
-                isFiltersOpen && styles.accordionToggleButtonActive,
-                activeFilterCount > 0 && !isFiltersOpen && styles.accordionToggleHasFilters,
-              ]}
-              accessibilityRole="button"
-              accessibilityLabel={isFiltersOpen ? 'Hide attribute filters' : 'Show attribute filters'}
-            >
-              <View style={styles.accordionToggleLeft}>
-                <Filter
-                  size={18}
-                  color={
-                    isFiltersOpen
-                      ? '#FFFFFF'
-                      : activeFilterCount > 0
-                        ? COLORS.primary
-                        : COLORS.textSecondary
-                  }
-                />
-                <Text
-                  style={[
-                    styles.accordionToggleText,
-                    isFiltersOpen && styles.accordionToggleTextActive,
-                    activeFilterCount > 0 && !isFiltersOpen && styles.accordionToggleTextHasFilters,
-                  ]}
-                >
-                  {isFiltersOpen ? 'Hide Filters' : 'Filter by Attributes'}
-                </Text>
-
-                {activeFilterCount > 0 && (
-                  <View
-                    style={[
-                      styles.filterBadge,
-                      isFiltersOpen && styles.filterBadgeActive,
-                    ]}
-                  >
-                    <Text
-                      style={[
-                        styles.filterBadgeText,
-                        isFiltersOpen && styles.filterBadgeTextActive,
-                      ]}
-                    >
-                      {activeFilterCount}
-                    </Text>
-                  </View>
-                )}
-              </View>
-
-              {isFiltersOpen ? (
-                <ChevronUp size={20} color={isFiltersOpen ? '#FFFFFF' : COLORS.text} />
-              ) : (
-                <ChevronDown size={20} color={COLORS.textSecondary} />
-              )}
-            </Pressable>
-
-            {activeFilterCount > 0 && (
-              <Pressable
-                onPress={handleClearFilters}
-                style={styles.quickResetButton}
-                accessibilityRole="button"
-                accessibilityLabel="Clear all attribute filters"
-              >
-                <RotateCcw size={15} color={COLORS.danger} />
-                <Text style={styles.quickResetText}>Clear</Text>
-              </Pressable>
-            )}
-          </View>
-
-          {/* Collapsible Accordion Body */}
-          {isFiltersOpen && (
-            <View style={styles.accordionCard}>
-              {/* Quick general search bar (by ID, remarks, etc.) */}
-              <SearchBar
-                value={filterCriteria.query || ''}
-                onChangeText={handleQueryChange}
-                placeholder="Search by ID, remark, or any keyword..."
-              />
-              <View style={styles.gridRow}>
-                <View style={styles.gridCol}>
-                  <Text style={styles.inputLabel}>Clone Number</Text>
-                  <TextInput
-                    style={styles.gridInput}
-                    placeholder="e.g. TV1"
-                    placeholderTextColor={COLORS.textSecondary}
-                    value={filterCriteria.cloneNumber || ''}
-                    onChangeText={(val) => handleFilterFieldChange('cloneNumber', val)}
-                    autoCapitalize="characters"
-                    autoCorrect={false}
-                  />
-                </View>
-
-                <View style={styles.gridCol}>
-                  <Text style={styles.inputLabel}>Tree Number</Text>
-                  <TextInput
-                    style={styles.gridInput}
-                    placeholder="e.g. 12"
-                    placeholderTextColor={COLORS.textSecondary}
-                    value={filterCriteria.treeNumber || ''}
-                    onChangeText={(val) => handleFilterFieldChange('treeNumber', val)}
-                    autoCorrect={false}
-                  />
-                </View>
-              </View>
-
-              <View style={styles.gridRow}>
-                <View style={styles.gridCol}>
-                  <Text style={styles.inputLabel}>Leaf Number</Text>
-                  <TextInput
-                    style={styles.gridInput}
-                    placeholder="e.g. 3"
-                    placeholderTextColor={COLORS.textSecondary}
-                    value={filterCriteria.leafNumber || ''}
-                    onChangeText={(val) => handleFilterFieldChange('leafNumber', val)}
-                    autoCorrect={false}
-                  />
-                </View>
-
-                <View style={styles.gridCol}>
-                  <Text style={styles.inputLabel}>Garden Name</Text>
-                  <TextInput
-                    style={styles.gridInput}
-                    placeholder="e.g. Tocklai"
-                    placeholderTextColor={COLORS.textSecondary}
-                    value={filterCriteria.gardenName || ''}
-                    onChangeText={(val) => handleFilterFieldChange('gardenName', val)}
-                    autoCorrect={false}
-                  />
-                </View>
-              </View>
-
-              {activeFilterCount > 0 && (
-                <Pressable
-                  onPress={handleClearFilters}
-                  style={styles.accordionResetBtn}
-                  accessibilityRole="button"
-                >
-                  <RotateCcw size={14} color={COLORS.danger} />
-                  <Text style={styles.accordionResetBtnText}>Reset All Filters</Text>
-                </Pressable>
-              )}
-            </View>
-          )}
-
-          {/* Toggle between samples with and without images */}
-          <View style={styles.toggleRow}>
-            <Pressable
-              onPress={() => setActivePanel('with_images')}
-              style={[
-                styles.toggleButton,
-                activePanel === 'with_images' ? styles.toggleButtonActive : null,
+                styles.tabText,
+                activePanel === 'with_images' ? styles.tabTextActive : null,
               ]}
             >
-              <Text
-                style={[
-                  styles.toggleLabel,
-                  activePanel === 'with_images' ? styles.toggleLabelActive : null,
-                ]}
-              >
-                Samples With Images
-              </Text>
-            </Pressable>
+              With Photos ({countWithImages})
+            </Text>
+          </Pressable>
 
-            <Pressable
-              onPress={() => setActivePanel('without_images')}
+          <Pressable
+            onPress={() => setActivePanel('without_images')}
+            style={[
+              styles.tabBtn,
+              activePanel === 'without_images' ? styles.tabBtnActive : null,
+            ]}
+          >
+            <Text
               style={[
-                styles.toggleButton,
-                activePanel === 'without_images' ? styles.toggleButtonActive : null,
+                styles.tabText,
+                activePanel === 'without_images' ? styles.tabTextActive : null,
               ]}
             >
-              <Text
-                style={[
-                  styles.toggleLabel,
-                  activePanel === 'without_images' ? styles.toggleLabelActive : null,
-                ]}
-              >
-                Samples Without Images
-              </Text>
-            </Pressable>
-          </View>
-
-          <Text style={styles.resultTitle}>
-            {activePanel === 'with_images' ? 'Samples With Images' : 'Samples Without Images'}
-            {!loading && ` (${filteredSamples.length})`}
-          </Text>
-
-          <FlatList
-            data={filteredSamples}
-            keyExtractor={(item) => item.id}
-            style={styles.list}
-            contentContainerStyle={styles.listContent}
-            keyboardShouldPersistTaps="handled"
-            ListEmptyComponent={
-              loading ? (
-                <Text style={styles.empty}>
-                  Loading samples...
-                </Text>
-              ) : (
-                <Text style={styles.empty}>
-                  {activeFilterCount > 0 || filterCriteria.query
-                    ? 'No matching samples found for the selected filters.'
-                    : 'No samples found in this panel.'}
-                </Text>
-              )
-            }
-            renderItem={({ item }) => (
-              <SampleSummaryCard
-                sample={item}
-                onPress={() =>
-                  router.push({
-                    pathname: '/update-sample/[id]',
-                    params: {
-                      id: item.id,
-                    },
-                  })
-                }
-              />
-            )}
-          />
-
-          {/* <ActionButton
-            label="Back"
-            variant="secondary"
-            onPress={() => router.back()}
-            style={styles.back}
-          /> */}
+              No Photos ({countWithoutImages})
+            </Text>
+          </Pressable>
         </View>
-      </SafeAreaView>
-    </SafeAreaProvider>
+
+        {/* Filter Trigger Bar */}
+        <View style={styles.filterRow}>
+          <Pressable
+            onPress={() => setIsFiltersOpen((prev) => !prev)}
+            style={[
+              styles.filterToggleBtn,
+              isFiltersOpen ? styles.filterToggleBtnActive : null,
+              activeFilterCount > 0 && !isFiltersOpen ? styles.filterHasActive : null,
+            ]}
+          >
+            <View style={styles.filterLeft}>
+              <Filter
+                size={16}
+                color={isFiltersOpen ? '#FFFFFF' : C.navyMid}
+              />
+              <Text
+                style={[
+                  styles.filterToggleText,
+                  isFiltersOpen ? styles.filterToggleTextActive : null,
+                ]}
+              >
+                {isFiltersOpen ? 'Close Attribute Filters' : 'Filter by Attributes'}
+              </Text>
+              {activeFilterCount > 0 ? (
+                <View style={styles.filterCountBadge}>
+                  <Text style={styles.filterCountText}>{activeFilterCount}</Text>
+                </View>
+              ) : null}
+            </View>
+
+            {isFiltersOpen ? (
+              <ChevronUp size={18} color="#FFFFFF" />
+            ) : (
+              <ChevronDown size={18} color={C.textMuted} />
+            )}
+          </Pressable>
+
+          {activeFilterCount > 0 ? (
+            <Pressable onPress={handleClearFilters} style={styles.resetPill}>
+              <RotateCcw size={13} color={C.danger} />
+              <Text style={styles.resetText}>Reset</Text>
+            </Pressable>
+          ) : null}
+        </View>
+
+        {/* Expandable Filter Card */}
+        {isFiltersOpen ? (
+          <View style={styles.filterCard}>
+            <SearchBar
+              value={filterCriteria.query || ''}
+              onChangeText={handleQueryChange}
+              placeholder="Search keyword, remark, ID..."
+            />
+
+            <View style={styles.gridRow}>
+              <View style={styles.gridCol}>
+                <Text style={styles.inputLabel}>Clone Number</Text>
+                <TextInput
+                  style={styles.gridInput}
+                  placeholder="e.g. TV-1"
+                  placeholderTextColor={C.textLight}
+                  value={filterCriteria.cloneNumber || ''}
+                  onChangeText={(val) => handleFilterFieldChange('cloneNumber', val)}
+                  autoCapitalize="characters"
+                />
+              </View>
+
+              <View style={styles.gridCol}>
+                <Text style={styles.inputLabel}>Tree Number</Text>
+                <TextInput
+                  style={styles.gridInput}
+                  placeholder="e.g. 12"
+                  placeholderTextColor={C.textLight}
+                  value={filterCriteria.treeNumber || ''}
+                  onChangeText={(val) => handleFilterFieldChange('treeNumber', val)}
+                  keyboardType="number-pad"
+                />
+              </View>
+            </View>
+
+            <View style={styles.gridRow}>
+              <View style={styles.gridCol}>
+                <Text style={styles.inputLabel}>Leaf Number</Text>
+                <TextInput
+                  style={styles.gridInput}
+                  placeholder="e.g. 3"
+                  placeholderTextColor={C.textLight}
+                  value={filterCriteria.leafNumber || ''}
+                  onChangeText={(val) => handleFilterFieldChange('leafNumber', val)}
+                  keyboardType="number-pad"
+                />
+              </View>
+
+              <View style={styles.gridCol}>
+                <Text style={styles.inputLabel}>Garden Name</Text>
+                <TextInput
+                  style={styles.gridInput}
+                  placeholder="e.g. Tocklai"
+                  placeholderTextColor={C.textLight}
+                  value={filterCriteria.gardenName || ''}
+                  onChangeText={(val) => handleFilterFieldChange('gardenName', val)}
+                />
+              </View>
+            </View>
+          </View>
+        ) : null}
+
+        {/* Samples List */}
+        <FlatList
+          data={filteredSamples}
+          keyExtractor={(item) => item.id}
+          contentContainerStyle={styles.listContent}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyTitle}>
+                {loading ? 'Loading samples…' : 'No Samples Found'}
+              </Text>
+              <Text style={styles.emptySubtitle}>
+                {loading
+                  ? 'Fetching local SQLite database records…'
+                  : activeFilterCount > 0
+                  ? 'Try relaxing your filter criteria above.'
+                  : 'No records exist in this tab.'}
+              </Text>
+            </View>
+          }
+          renderItem={({ item }) => (
+            <SampleSummaryCard
+              sample={item}
+              onPress={() =>
+                router.push({
+                  pathname: '/update-sample/[id]',
+                  params: { id: item.id },
+                })
+              }
+            />
+          )}
+        />
+      </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   page: {
     flex: 1,
+    backgroundColor: C.page,
   },
-
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
-    padding: SPACING.md,
+    paddingHorizontal: 16,
+    paddingTop: 8,
   },
 
-  accordionToggleRow: {
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#E2E8F0',
+    borderRadius: 14,
+    padding: 4,
+    marginBottom: 12,
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 9,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 11,
+  },
+  tabBtnActive: {
+    backgroundColor: C.card,
+    shadowColor: '#1A3A6E',
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 2,
+  },
+  tabText: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: C.textMuted,
+  },
+  tabTextActive: {
+    color: C.navy,
+    fontWeight: '800',
+  },
+
+  filterRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.sm,
-    marginBottom: SPACING.sm,
+    gap: 8,
+    marginBottom: 10,
   },
-
-  accordionToggleButton: {
+  filterToggleBtn: {
     flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    backgroundColor: COLORS.surface,
+    backgroundColor: C.card,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
     borderWidth: 1.5,
-    borderColor: COLORS.border,
-    borderRadius: RADIUS.sm,
-    paddingVertical: SPACING.xs + 2,
-    paddingHorizontal: SPACING.sm,
+    borderColor: C.border,
   },
-
-  accordionToggleButtonActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
+  filterToggleBtnActive: {
+    backgroundColor: C.navyMid,
+    borderColor: C.navyMid,
   },
-
-  accordionToggleHasFilters: {
-    borderColor: COLORS.primary,
+  filterHasActive: {
+    borderColor: C.blue,
   },
-
-  accordionToggleLeft: {
+  filterLeft: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: SPACING.xs,
+    gap: 8,
   },
-
-  accordionToggleText: {
-    fontSize: FONT_SIZES.body,
+  filterToggleText: {
+    fontSize: 13,
     fontWeight: '700',
-    color: COLORS.text,
+    color: C.navyMid,
   },
-
-  accordionToggleTextActive: {
+  filterToggleTextActive: {
     color: '#FFFFFF',
   },
-
-  accordionToggleTextHasFilters: {
-    color: COLORS.primary,
-  },
-
-  filterBadge: {
-    backgroundColor: COLORS.primary,
+  filterCountBadge: {
+    backgroundColor: C.blue,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
     borderRadius: 10,
-    minWidth: 20,
-    height: 20,
+  },
+  filterCountText: {
+    color: '#FFFFFF',
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  resetPill: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: 5,
+    gap: 5,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    backgroundColor: '#FEF2F2',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#FECACA',
   },
-
-  filterBadgeActive: {
-    backgroundColor: '#FFFFFF',
-  },
-
-  filterBadgeText: {
+  resetText: {
+    color: C.danger,
     fontSize: 12,
     fontWeight: '700',
-    color: '#FFFFFF',
   },
 
-  filterBadgeTextActive: {
-    color: COLORS.primary,
-  },
-
-  quickResetButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: COLORS.surface,
+  filterCard: {
+    backgroundColor: C.card,
+    borderRadius: 18,
+    padding: 14,
+    marginBottom: 12,
     borderWidth: 1.5,
-    borderColor: COLORS.danger,
-    borderRadius: RADIUS.sm,
-    paddingVertical: SPACING.xs + 2,
-    paddingHorizontal: SPACING.sm,
+    borderColor: C.border,
+    gap: 10,
+    shadowColor: '#1A3A6E',
+    shadowOpacity: 0.08,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
   },
-
-  quickResetText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.danger,
-  },
-
-  accordionCard: {
-    backgroundColor: COLORS.surface,
-    borderWidth: 1.5,
-    borderColor: COLORS.border,
-    borderRadius: RADIUS.sm,
-    padding: SPACING.sm,
-    marginBottom: SPACING.sm,
-  },
-
   gridRow: {
     flexDirection: 'row',
-    gap: SPACING.sm,
-    marginBottom: SPACING.xs,
+    gap: 10,
   },
-
   gridCol: {
     flex: 1,
+    gap: 4,
   },
-
   inputLabel: {
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
-    color: COLORS.textSecondary,
-    marginBottom: 4,
+    color: C.navy,
   },
-
   gridInput: {
-    height: 40,
+    backgroundColor: '#F8FAFC',
     borderWidth: 1.5,
-    borderColor: COLORS.border,
-    borderRadius: RADIUS.sm,
-    paddingHorizontal: SPACING.sm,
-    fontSize: 14,
-    color: COLORS.text,
-    backgroundColor: COLORS.background,
-  },
-
-  accordionResetBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingTop: SPACING.xs,
-    paddingBottom: 2,
-  },
-
-  accordionResetBtnText: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.danger,
-  },
-
-  resultTitle: {
-    fontSize: FONT_SIZES.label,
-    fontWeight: '700',
-    color: COLORS.text,
-    marginBottom: SPACING.sm,
-  },
-
-  toggleRow: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-    marginBottom: SPACING.sm,
-  },
-
-  toggleButton: {
-    flex: 1,
-    borderWidth: 2,
-    borderColor: COLORS.border,
-    borderRadius: 8,
-    backgroundColor: COLORS.surface,
-    paddingVertical: SPACING.xs,
-    paddingHorizontal: SPACING.sm,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  toggleButtonActive: {
-    backgroundColor: COLORS.primary,
-    borderColor: COLORS.primary,
-  },
-
-  toggleLabel: {
-    fontSize: FONT_SIZES.body,
-    fontWeight: '700',
-    color: COLORS.text,
-    textAlign: 'center',
-  },
-
-  toggleLabelActive: {
-    color: '#FFFFFF',
-  },
-
-  list: {
-    flex: 1,
+    borderColor: C.border,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    height: 44,
+    fontSize: 13.5,
+    color: C.navy,
   },
 
   listContent: {
-    paddingBottom: SPACING.md,
+    paddingBottom: 24,
   },
-
-  empty: {
-    fontSize: FONT_SIZES.body,
-    color: COLORS.textSecondary,
+  emptyContainer: {
+    padding: 32,
+    alignItems: 'center',
+    gap: 6,
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: C.navy,
+  },
+  emptySubtitle: {
+    fontSize: 13,
+    color: C.textMuted,
     textAlign: 'center',
-    padding: SPACING.md,
-  },
-
-  back: {
-    marginTop: SPACING.md,
   },
 });

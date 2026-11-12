@@ -1,819 +1,728 @@
 import * as Network from 'expo-network';
-import { ActionButton } from '@/components/ActionButton';
-import { COLORS, FONT_SIZES, SPACING } from '@/constants/theme';
+import { router, useFocusEffect } from 'expo-router';
 import {
-    pauseUploads,
-    uploadAllSamples,
+  ArrowLeft,
+  CheckCircle2,
+  Cloud,
+  FileCheck2,
+  Pause,
+  Play,
+  RefreshCw,
+  UploadCloud,
+} from 'lucide-react-native';
+import { useCallback, useEffect, useState } from 'react';
+import {
+  Alert,
+  BackHandler,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+
+import { ScreenHeader } from '@/components/ScreenHeader';
+import {
+  pauseUploads,
+  uploadAllSamples,
 } from '@/services/sampleUploadService';
 import { notifySyncStarted } from '@/services/syncNotifications';
 import { getSyncState } from '@/services/syncPersistence';
 import { useAlertStore } from '@/store/alertStore';
 import { useSampleStore } from '@/store/sampleStore';
-import { router, useFocusEffect } from 'expo-router';
-import {
-    ArrowLeft,
-    CheckCircle2,
-    Cloud,
-    Pause,
-    RefreshCw,
-} from 'lucide-react-native';
-import { useCallback, useEffect, useState } from 'react';
-import {
-    Alert,
-    BackHandler,
-    Pressable,
-    StyleSheet,
-    Text,
-    View
-} from 'react-native';
-import { ScrollView } from 'react-native-gesture-handler';
-import { SafeAreaView } from 'react-native-safe-area-context';
+
+const C = {
+  navy: '#0D1F3C',
+  navyMid: '#1E3A5F',
+  page: '#F0F5FF',
+  card: '#FFFFFF',
+  border: '#E2E8F0',
+  blue: '#2563EB',
+  blueLight: '#EFF6FF',
+  blueBorder: '#BFDBFE',
+  green: '#16A34A',
+  greenLight: '#F0FDF4',
+  greenBorder: '#BBF7D0',
+  gold: '#E5A820',
+  btnPrimary: '#1D3557',
+  btnShadow: '#0A1A30',
+  textMuted: '#64748B',
+  danger: '#DC2626',
+};
 
 interface UploadProgress {
-    totalSamples: number;
-    completedSamples: number;
-
-    currentSample: string;
-
-    uploadedImages: number;
-    skippedImages: number;
-    failedImages: number;
-    failedSamples: number;
-
-    totalImages: number;
-    completedImages: number;
-
-    currentImage: number;
+  totalSamples: number;
+  completedSamples: number;
+  currentSample: string;
+  uploadedImages: number;
+  skippedImages: number;
+  failedImages: number;
+  failedSamples: number;
+  totalImages: number;
+  completedImages: number;
+  currentImage: number;
 }
 
 const initialProgress: UploadProgress = {
-    totalSamples: 0,
-    completedSamples: 0,
-    currentSample: '',
-    uploadedImages: 0,
-    skippedImages: 0,
-    failedImages: 0,
-    failedSamples: 0,
-    totalImages: 0,
-    completedImages: 0,
-    currentImage: 0,
+  totalSamples: 0,
+  completedSamples: 0,
+  currentSample: '',
+  uploadedImages: 0,
+  skippedImages: 0,
+  failedImages: 0,
+  failedSamples: 0,
+  totalImages: 0,
+  completedImages: 0,
+  currentImage: 0,
 };
 
 export default function SyncScreen() {
-    const samples = useSampleStore((state) => state.samples);
+  const samples = useSampleStore((state) => state.samples);
+  const showAlert = useAlertStore.getState().showAlert;
 
-    const showAlert = useAlertStore.getState().showAlert;
+  const [uploading, setUploading] = useState(false);
+  const [paused, setPaused] = useState(false);
+  const [hasStarted, setHasStarted] = useState(false);
+  const [completed, setCompleted] = useState(false);
+  const [isPausing, setIsPausing] = useState(false);
 
-    const [uploading, setUploading] = useState(false);
-    const [paused, setPaused] = useState(false);
-    const [hasStarted, setHasStarted] = useState(false);
-    const [completed, setCompleted] = useState(false);
-    const [isPausing, setIsPausing] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress>(initialProgress);
 
-    const [uploadProgress, setUploadProgress] =
-        useState<UploadProgress>(initialProgress);
+  const samplesWithImages = samples.filter((sample) => sample.images.length > 0).length;
+  const totalLocalImages = samples.reduce((total, sample) => total + sample.images.length, 0);
 
-    const samplesWithImages = samples.filter(
-        (sample) => sample.images.length > 0,
-    ).length;
+  useEffect(() => {
+    let mounted = true;
 
-    const totalLocalImages = samples.reduce(
-        (total, sample) => total + sample.images.length,
-        0,
-    );
+    async function restoreSyncState() {
+      const state = await getSyncState();
+      if (!state || !mounted) return;
 
-    useEffect(() => {
-        let mounted = true;
+      setHasStarted(true);
+      setCompleted(false);
+      setPaused(true);
+      setUploadProgress({
+        totalSamples: state.totalSamples,
+        completedSamples: state.stats.completedSamples,
+        currentSample: state.currentSample,
+        uploadedImages: state.stats.uploadedImages,
+        skippedImages: state.stats.skippedImages,
+        failedImages: state.stats.failedImages,
+        failedSamples: state.stats.failedSamples,
+        totalImages: state.totalImages,
+        completedImages:
+          state.stats.uploadedImages +
+          state.stats.skippedImages +
+          state.stats.failedImages,
+        currentImage: state.currentImage,
+      });
+    }
 
-        async function restoreSyncState() {
-            const state = await getSyncState();
+    restoreSyncState();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
-            if (!state || !mounted) {
-                return;
-            }
+  const handleBack = () => {
+    if (uploading) {
+      Alert.alert(
+        'Sync in progress',
+        'Upload is currently running. Pausing upload before navigating away.',
+        [
+          { text: 'Wait', style: 'cancel' },
+          {
+            text: 'Pause & Leave',
+            style: 'destructive',
+            onPress: async () => {
+              await handlePause();
+              router.back();
+            },
+          },
+        ]
+      );
+      return;
+    }
+    router.back();
+  };
 
-            setHasStarted(true);
-            setCompleted(false);
-
-            // If the app was killed while the sync was running,
-            // it obviously isn't running anymore.
-            setPaused(true);
-
-            setUploadProgress({
-                totalSamples: state.totalSamples,
-                completedSamples:
-                    state.stats.completedSamples,
-
-                currentSample: state.currentSample,
-
-                uploadedImages:
-                    state.stats.uploadedImages,
-
-                skippedImages:
-                    state.stats.skippedImages,
-
-                failedImages:
-                    state.stats.failedImages,
-
-                failedSamples:
-                    state.stats.failedSamples,
-
-                totalImages: state.totalImages,
-
-                completedImages:
-                    state.stats.uploadedImages +
-                    state.stats.skippedImages +
-                    state.stats.failedImages,
-
-                currentImage: state.currentImage,
-            });
-        }
-
-        restoreSyncState();
-
-        return () => {
-            mounted = false;
-        };
-    }, []);
-
-    const progressPercentage =
-        uploadProgress.totalImages > 0
-            ? Math.round(
-                (uploadProgress.completedImages /
-                    uploadProgress.totalImages) *
-                100,
-            )
-            : 0;
-
-    const handleBack = useCallback(() => {
-        if (uploading) {
-            Alert.alert(
-                'Upload in progress',
-                'Please pause the sync before leaving this screen.',
-                [
-                    {
-                        text: 'OK',
-                    },
-                ],
-            );
-
-            return true;
-        }
-
-        router.back();
+  useFocusEffect(
+    useCallback(() => {
+      const handleHardwareBack = () => {
+        handleBack();
         return true;
-    }, [uploading]);
+      };
 
-    useFocusEffect(
-        useCallback(() => {
-            const subscription = BackHandler.addEventListener(
-                'hardwareBackPress',
-                handleBack,
-            );
+      const backHandler = BackHandler.addEventListener(
+        'hardwareBackPress',
+        handleHardwareBack
+      );
+      return () => backHandler.remove();
+    }, [uploading])
+  );
 
-            return () => subscription.remove();
-        }, [handleBack]),
-    );
+  const handleStartSync = async () => {
+    const network = await Network.getNetworkStateAsync();
+    if (!network.isConnected || !network.isInternetReachable) {
+      showAlert('error', 'No internet connection. Please connect to Wi-Fi or mobile data.');
+      return;
+    }
 
-    const handleStartSync = async () => {
-        if (uploading) {
-            return;
-        }
+    await notifySyncStarted(totalLocalImages);
+    setHasStarted(true);
+    setUploading(true);
+    setPaused(false);
+    setCompleted(false);
 
-        const network = await Network.getNetworkStateAsync();
-        if (!network.isConnected || network.isInternetReachable === false) {
-            showAlert(
-                'error',
-                'No internet connection. Please connect to the internet and try again.',
-            );
-            return;
-        }
+    try {
+      const result = await uploadAllSamples((progress) => {
+        setUploadProgress(progress);
+      });
 
-        try {
-            setUploading(true);
-            setPaused(false);
-            setHasStarted(true);
-            setCompleted(false);
+      setUploading(false);
+      setCompleted(!result.paused);
+      showAlert(
+        result.failedSamples > 0 ? 'warning' : 'success',
+        result.paused
+          ? 'Sync paused.'
+          : `Sync finished: ${result.uploadedImages} uploaded, ${result.failedImages} failed.`
+      );
+    } catch {
+      showAlert('error', 'An error occurred during synchronization.');
+      setUploading(false);
+    }
+  };
 
-            showAlert(
-                'info',
-                'Cloud sync started. Uploading your samples...',
-            );
+  const handlePause = async () => {
+    setIsPausing(true);
+    try {
+      await pauseUploads();
+      setPaused(true);
+      setUploading(false);
+    } finally {
+      setIsPausing(false);
+    }
+  };
 
-            await notifySyncStarted(totalLocalImages);
+  const handleResumeSync = async () => {
+    const network = await Network.getNetworkStateAsync();
+    if (!network.isConnected) {
+      showAlert('error', 'No internet connection to resume sync.');
+      return;
+    }
 
-            const result = await uploadAllSamples((progress) => {
-                setUploadProgress(progress);
-            });
+    setPaused(false);
+    setUploading(true);
 
-            if (result.paused) {
-                setPaused(true);
-                setIsPausing(false);
+    try {
+      const result = await uploadAllSamples((progress) => {
+        setUploadProgress(progress);
+      });
 
-                showAlert(
-                    'warning',
-                    'Cloud sync paused.',
-                );
+      setUploading(false);
+      setCompleted(!result.paused);
+      showAlert(
+        result.failedSamples > 0 ? 'warning' : 'success',
+        result.paused
+          ? 'Sync paused.'
+          : `Sync finished: ${result.uploadedImages} uploaded, ${result.failedImages} failed.`
+      );
+    } catch {
+      showAlert('error', 'Sync encountered an error.');
+      setUploading(false);
+    }
+  };
 
-                return;
-            }
+  const handleDone = () => {
+    router.back();
+  };
 
-            setPaused(false);
-            setCompleted(true);
+  const handleStartAgain = () => {
+    setUploadProgress(initialProgress);
+    setCompleted(false);
+    setHasStarted(false);
+    setPaused(false);
+    setIsPausing(false);
+  };
 
-            if (result.failedSamples > 0 || result.failedImages > 0) {
-                const parts: string[] = [];
-                if (result.failedSamples > 0) parts.push(`${result.failedSamples} sample(s)`);
-                if (result.failedImages > 0) parts.push(`${result.failedImages} image(s)`);
-                showAlert(
-                    'warning',
-                    `Sync completed with failures: ${parts.join(', ')}.`,
-                );
-            } else {
-                showAlert(
-                    'success',
-                    `Cloud sync completed. ${result.uploadedImages} image(s) uploaded.`,
-                );
-            }
-        } catch (error) {
-            console.error('SYNC ERROR:', error);
+  const progressPercentage =
+    uploadProgress.totalImages > 0
+      ? Math.round((uploadProgress.completedImages / uploadProgress.totalImages) * 100)
+      : 0;
 
-            if (uploadProgress.completedImages > 0) {
-                setPaused(true);
-            } else {
-                setHasStarted(false);
-                setPaused(false);
-            }
+  return (
+    <SafeAreaView style={styles.page}>
+      <ScrollView contentContainerStyle={styles.container} showsVerticalScrollIndicator={false}>
+        <ScreenHeader
+          title="Cloud Sync"
+          subtitle="Synchronize local research records with Supabase"
+          onBack={handleBack}
+        />
 
-            showAlert(
-                'error',
-                error instanceof Error
-                    ? error.message
-                    : 'Unable to sync samples.',
-            );
-        } finally {
-            setUploading(false);
-            setIsPausing(false);
-        }
-    };
+        {!hasStarted ? (
+          /* ── READY STATE ── */
+          <View style={styles.readyCard}>
+            <View style={styles.cloudIconBadge}>
+              <UploadCloud size={44} color={C.blue} strokeWidth={1.8} />
+            </View>
 
-    const handlePause = () => {
-        setIsPausing(true);
-        pauseUploads();
+            <Text style={styles.readyTitle}>Ready to Synchronize</Text>
+            <Text style={styles.readySub}>
+              Upload your locally collected tea leaf samples and attached photos safely to the cloud.
+            </Text>
 
-        showAlert(
-            'warning',
-            'Pause requested. The current image will finish first.',
-        );
-    };
+            <View style={styles.metricsRow}>
+              <View style={styles.metricBox}>
+                <Text style={styles.metricValue}>{samplesWithImages}</Text>
+                <Text style={styles.metricLabel}>Samples to Sync</Text>
+              </View>
 
-    const handleResumeSync = async () => {
-        if (uploading) {
-            return;
-        }
+              <View style={styles.metricDivider} />
 
-        const network = await Network.getNetworkStateAsync();
-        if (!network.isConnected || network.isInternetReachable === false) {
-            showAlert(
-                'error',
-                'No internet connection. Please connect to the internet and try again.',
-            );
-            return;
-        }
+              <View style={styles.metricBox}>
+                <Text style={[styles.metricValue, { color: C.green }]}>{totalLocalImages}</Text>
+                <Text style={styles.metricLabel}>Total Photos</Text>
+              </View>
+            </View>
 
-        try {
-            setUploading(true);
-            setPaused(false);
-
-            const result = await uploadAllSamples(
-                (progress) => {
-                    setUploadProgress(progress);
-                },
-                {
-                    resume: true,
-                },
-            );
-
-            if (result.paused) {
-                setPaused(true);
-                setIsPausing(false);
-                return;
-            }
-
-            setPaused(false);
-            setCompleted(true);
-        } catch (error) {
-            console.error(
-                'RESUME SYNC ERROR:',
-                error,
-            );
-
-            setPaused(true);
-
-            showAlert(
-                'error',
-                error instanceof Error
-                    ? error.message
-                    : 'Unable to resume sync.',
-            );
-        } finally {
-            setUploading(false);
-            setIsPausing(false);
-        }
-    };
-
-    const handleDone = () => {
-        router.back();
-    };
-
-    const handleStartAgain = () => {
-        setUploadProgress(initialProgress);
-        setCompleted(false);
-        setHasStarted(false);
-        setPaused(false);
-        setIsPausing(false);
-    };
-
-    const renderReadyState = () => (
-        <View style={styles.stateContainer}>
-            <View style={styles.largeIconContainer}>
-                <Cloud
-                    size={42}
-                    color={COLORS.primary}
-                />
+            <TouchableOpacity
+              style={[styles.primaryBtn, samplesWithImages === 0 && styles.btnDisabled]}
+              onPress={handleStartSync}
+              disabled={samplesWithImages === 0}
+              activeOpacity={0.85}
+            >
+              <RefreshCw size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Text style={styles.primaryBtnText}>
+                {samplesWithImages > 0 ? 'Start Sync to Cloud' : 'No Samples Ready'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          /* ── ACTIVE / PAUSED / COMPLETED SYNC STATE ── */
+          <View style={styles.syncStateCard}>
+            <View
+              style={[
+                styles.statusIconWrap,
+                completed
+                  ? styles.statusCompleted
+                  : paused
+                  ? styles.statusPaused
+                  : styles.statusSyncing,
+              ]}
+            >
+              {completed ? (
+                <CheckCircle2 size={40} color={C.green} />
+              ) : paused ? (
+                <Pause size={36} color={C.gold} />
+              ) : (
+                <RefreshCw size={36} color={C.blue} />
+              )}
             </View>
 
             <Text style={styles.stateTitle}>
-                Ready to sync
+              {completed
+                ? 'Synchronization Complete 🎉'
+                : paused
+                ? 'Sync Paused'
+                : 'Uploading Field Data…'}
             </Text>
 
-            <Text style={styles.stateDescription}>
-                Upload your locally stored samples and images
-                to the cloud.
+            <Text style={styles.stateSub}>
+              {completed
+                ? 'All selected samples and photos have been backed up.'
+                : paused
+                ? 'Upload progress is preserved. Tap resume whenever ready.'
+                : 'Please keep the app open while uploading images.'}
             </Text>
 
-            <View style={styles.summaryCard}>
-                <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>
-                        Samples
-                    </Text>
-
-                    <Text style={styles.summaryValue}>
-                        {samplesWithImages}
-                    </Text>
-                </View>
-
-                <View style={styles.divider} />
-
-                <View style={styles.summaryRow}>
-                    <Text style={styles.summaryLabel}>
-                        Images
-                    </Text>
-
-                    <Text style={styles.summaryValue}>
-                        {totalLocalImages}
-                    </Text>
-                </View>
-            </View>
-
-            <ActionButton
-                label="Start Sync"
-                onPress={handleStartSync}
-                disabled={samplesWithImages === 0}
-                variant="tertiary"
-            />
-
-            {samplesWithImages === 0 && (
-                <Text style={styles.emptyText}>
-                    No samples with images are ready to sync.
-                </Text>
-            )}
-        </View>
-    );
-
-    const renderSyncState = () => (
-        <View style={styles.stateContainer}>
-            <View style={styles.syncIconContainer}>
-                {paused ? (
-                    <Pause
-                        size={38}
-                        color={COLORS.textSecondary}
-                    />
-                ) : completed ? (
-                    <CheckCircle2
-                        size={42}
-                        color={COLORS.primary}
-                    />
-                ) : (
-                    <RefreshCw
-                        size={38}
-                        color={COLORS.primary}
-                    />
-                )}
-            </View>
-
-            <Text style={styles.stateTitle}>
-                {paused
-                    ? 'Sync Paused'
-                    : completed
-                        ? 'Sync Complete'
-                        : 'Syncing data...'}
-            </Text>
-
-            <Text style={styles.stateDescription}>
-                {paused
-                    ? 'Your current progress has been retained.'
-                    : completed
-                        ? 'Your synchronization process has finished.'
-                        : 'Please keep the app open while the sync is running.'}
-            </Text>
-
+            {/* Progress Card */}
             <View style={styles.progressCard}>
-                <View style={styles.progressRow}>
-                    <Text style={styles.progressLabel}>
-                        Samples
-                    </Text>
+              <View style={styles.progressRow}>
+                <Text style={styles.progressLabel}>Sample Progress</Text>
+                <Text style={styles.progressVal}>
+                  {uploadProgress.completedSamples + uploadProgress.failedSamples} /{' '}
+                  {uploadProgress.totalSamples}
+                </Text>
+              </View>
 
-                    <Text style={styles.progressValue}>
-                        {uploadProgress.completedSamples + uploadProgress.failedSamples} /{' '}
-                        {uploadProgress.totalSamples}
-                    </Text>
-                </View>
+              <View style={styles.progressRow}>
+                <Text style={styles.progressLabel}>Image Uploads</Text>
+                <Text style={styles.progressVal}>
+                  {uploadProgress.completedImages} / {uploadProgress.totalImages}
+                </Text>
+              </View>
 
-                <View style={styles.progressRow}>
-                    <Text style={styles.progressLabel}>
-                        Images
-                    </Text>
+              {/* Modern Progress Bar */}
+              <View style={styles.progressTrack}>
+                <View
+                  style={[
+                    styles.progressBar,
+                    { width: `${Math.min(100, progressPercentage)}%` },
+                    completed && { backgroundColor: C.green },
+                  ]}
+                />
+              </View>
 
-                    <Text style={styles.progressValue}>
-                        {uploadProgress.completedImages} /{' '}
-                        {uploadProgress.totalImages}
-                    </Text>
-                </View>
-
-                <View style={styles.progressBackground}>
-                    <View
-                        style={[
-                            styles.progressFill,
-                            {
-                                width: `${Math.min(
-                                    100,
-                                    progressPercentage,
-                                )}%`,
-                            },
-                        ]}
-                    />
-                </View>
-
-                <View style={styles.progressFooter}>
-                    <Text style={styles.percentage}>
-                        {progressPercentage}%
-                    </Text>
-
-                    {!completed &&
-                        uploadProgress.currentSample && (
-                            <Text
-                                style={styles.currentSample}
-                                numberOfLines={1}
-                            >
-                                Sample: {uploadProgress.currentSample}
-                            </Text>
-                        )}
-                </View>
+              <View style={styles.progressFooter}>
+                <Text style={styles.percentageText}>{progressPercentage}%</Text>
+                {!completed && uploadProgress.currentSample ? (
+                  <Text style={styles.currentSampleText} numberOfLines={1}>
+                    Sample: {uploadProgress.currentSample.slice(0, 16)}…
+                  </Text>
+                ) : null}
+              </View>
             </View>
 
-            {completed && (
-                <View style={styles.resultCard}>
-                    <View style={styles.resultRow}>
-                        <Text style={styles.resultLabel}>
-                            Uploaded
-                        </Text>
-
-                        <Text style={styles.resultValue}>
-                            {uploadProgress.uploadedImages}
-                        </Text>
-                    </View>
-
-                    <View style={styles.resultRow}>
-                        <Text style={styles.resultLabel}>
-                            Already synced
-                        </Text>
-
-                        <Text style={styles.resultValue}>
-                            {uploadProgress.skippedImages}
-                        </Text>
-                    </View>
-
-                    <View style={styles.resultRow}>
-                        <Text style={styles.resultLabel}>
-                            Failed
-                        </Text>
-
-                        <Text
-                            style={[
-                                styles.resultValue,
-                                uploadProgress.failedImages > 0 &&
-                                styles.failedValue,
-                            ]}
-                        >
-                            {uploadProgress.failedImages}
-                        </Text>
-                    </View>
+            {/* Results breakdown if completed */}
+            {completed ? (
+              <View style={styles.resultBox}>
+                <View style={styles.resultItem}>
+                  <Text style={styles.resultItemLabel}>Uploaded</Text>
+                  <Text style={[styles.resultItemVal, { color: C.green }]}>
+                    {uploadProgress.uploadedImages}
+                  </Text>
                 </View>
+                <View style={styles.resultItem}>
+                  <Text style={styles.resultItemLabel}>Already Synced</Text>
+                  <Text style={styles.resultItemVal}>{uploadProgress.skippedImages}</Text>
+                </View>
+                <View style={styles.resultItem}>
+                  <Text style={styles.resultItemLabel}>Failed</Text>
+                  <Text
+                    style={[
+                      styles.resultItemVal,
+                      uploadProgress.failedImages > 0 && { color: C.danger },
+                    ]}
+                  >
+                    {uploadProgress.failedImages}
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+
+            {/* Controls */}
+            {!completed ? (
+              <View style={styles.controlGroup}>
+                {paused ? (
+                  <TouchableOpacity
+                    style={styles.primaryBtn}
+                    onPress={handleResumeSync}
+                    disabled={uploading}
+                    activeOpacity={0.85}
+                  >
+                    <Play size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                    <Text style={styles.primaryBtnText}>Resume Sync</Text>
+                  </TouchableOpacity>
+                ) : (
+                  <TouchableOpacity
+                    style={styles.pauseBtn}
+                    onPress={handlePause}
+                    disabled={!uploading || isPausing}
+                    activeOpacity={0.8}
+                  >
+                    <Pause size={18} color={C.navy} style={{ marginRight: 6 }} />
+                    <Text style={styles.pauseBtnText}>
+                      {isPausing ? 'Pausing Upload…' : 'Pause Sync'}
+                    </Text>
+                  </TouchableOpacity>
+                )}
+              </View>
+            ) : (
+              <View style={styles.controlGroup}>
+                <TouchableOpacity
+                  style={styles.primaryBtn}
+                  onPress={handleDone}
+                  activeOpacity={0.85}
+                >
+                  <FileCheck2 size={18} color="#FFFFFF" style={{ marginRight: 6 }} />
+                  <Text style={styles.primaryBtnText}>Done</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={handleStartAgain}
+                  activeOpacity={0.8}
+                >
+                  <Text style={styles.cancelBtnText}>Sync Again</Text>
+                </TouchableOpacity>
+              </View>
             )}
-
-            {!completed && (
-                <View style={styles.actionRow}>
-                    {paused ? (
-                        <ActionButton
-                            label="Resume Sync"
-                            onPress={handleResumeSync}
-                            disabled={uploading}
-                            variant="tertiary"
-                            style={styles.mainAction}
-                        />
-                    ) : (
-                        <ActionButton
-                            label={isPausing ? 'Pausing...' : 'Pause Sync'}
-                            onPress={handlePause}
-                            disabled={!uploading || isPausing}
-                            variant="secondary"
-                            style={styles.mainAction}
-                        />
-                    )}
-                </View>
-            )}
-
-            {completed && (
-                <View style={styles.completedActions}>
-                    <ActionButton
-                        label="Done"
-                        onPress={handleDone}
-                        variant="tertiary"
-                    />
-
-                    <ActionButton
-                        label="Sync Again"
-                        onPress={handleStartAgain}
-                        variant="secondary"
-                    />
-                </View>
-            )}
-        </View>
-    );
-
-    return (
-        <SafeAreaView style={styles.page}>
-            <ScrollView>
-                <View style={styles.container}>
-                    <View style={styles.header}>
-                        <Pressable
-                            onPress={handleBack}
-                            disabled={uploading}
-                            style={styles.backButton}
-                            hitSlop={10}
-                        >
-                            <ArrowLeft
-                                size={24}
-                                color={
-                                    uploading
-                                        ? COLORS.textSecondary
-                                        : COLORS.text
-                                }
-                            />
-                        </Pressable>
-
-                        <View style={styles.headerTitleContainer}>
-                            <Text style={styles.headerTitle}>
-                                Cloud Sync
-                            </Text>
-
-                            <Text style={styles.headerSubtitle}>
-                                Synchronize your field data
-                            </Text>
-                        </View>
-                    </View>
-
-                    <View style={styles.content}>
-                        {!hasStarted
-                            ? renderReadyState()
-                            : renderSyncState()}
-                    </View>
-                </View>
-            </ScrollView>
-        </SafeAreaView>
-    );
+          </View>
+        )}
+      </ScrollView>
+    </SafeAreaView>
+  );
 }
 
 const styles = StyleSheet.create({
-    page: {
-        flex: 1,
-        backgroundColor: COLORS.background,
-    },
+  page: {
+    flex: 1,
+    backgroundColor: C.page,
+  },
+  container: {
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 40,
+    gap: 16,
+  },
 
-    container: {
-        flex: 1,
-        padding: SPACING.xl,
-    },
+  readyCard: {
+    backgroundColor: C.card,
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: C.border,
+    shadowColor: '#1A3A6E',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+    gap: 12,
+  },
+  cloudIconBadge: {
+    width: 88,
+    height: 88,
+    borderRadius: 44,
+    backgroundColor: C.blueLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: C.blueBorder,
+    marginBottom: 4,
+  },
+  readyTitle: {
+    fontSize: 22,
+    fontWeight: '800',
+    color: C.navy,
+    textAlign: 'center',
+  },
+  readySub: {
+    fontSize: 13,
+    color: C.textMuted,
+    textAlign: 'center',
+    lineHeight: 20,
+    marginBottom: 10,
+  },
+  metricsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-around',
+    width: '100%',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 16,
+    paddingVertical: 14,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginBottom: 10,
+  },
+  metricBox: {
+    alignItems: 'center',
+    flex: 1,
+    gap: 2,
+  },
+  metricValue: {
+    fontSize: 26,
+    fontWeight: '800',
+    color: C.navy,
+  },
+  metricLabel: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: C.textMuted,
+  },
+  metricDivider: {
+    width: 1,
+    height: 38,
+    backgroundColor: '#E2E8F0',
+  },
 
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: SPACING.md,
-    },
+  syncStateCard: {
+    backgroundColor: C.card,
+    borderRadius: 24,
+    padding: 22,
+    alignItems: 'center',
+    borderWidth: 1.5,
+    borderColor: C.border,
+    shadowColor: '#1A3A6E',
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 4,
+    gap: 12,
+  },
+  statusIconWrap: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    marginBottom: 4,
+  },
+  statusSyncing: {
+    backgroundColor: C.blueLight,
+    borderColor: C.blueBorder,
+  },
+  statusPaused: {
+    backgroundColor: '#FEF9EC',
+    borderColor: '#FDE68A',
+  },
+  statusCompleted: {
+    backgroundColor: C.greenLight,
+    borderColor: C.greenBorder,
+  },
 
-    backButton: {
-        flex: 0,
-    },
+  stateTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: C.navy,
+    textAlign: 'center',
+  },
+  stateSub: {
+    fontSize: 13,
+    color: C.textMuted,
+    textAlign: 'center',
+    lineHeight: 19,
+  },
 
-    headerTitleContainer: {
-        flex: 1,
-    },
+  progressCard: {
+    width: '100%',
+    backgroundColor: '#F8FAFC',
+    borderRadius: 18,
+    padding: 16,
+    gap: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    marginTop: 4,
+  },
+  progressRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  progressLabel: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: C.textMuted,
+  },
+  progressVal: {
+    fontSize: 13.5,
+    fontWeight: '800',
+    color: C.navy,
+  },
+  progressTrack: {
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#E2E8F0',
+    overflow: 'hidden',
+    marginTop: 4,
+  },
+  progressBar: {
+    height: '100%',
+    borderRadius: 4,
+    backgroundColor: C.blue,
+  },
+  progressFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  percentageText: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: C.blue,
+  },
+  currentSampleText: {
+    fontSize: 11,
+    color: C.textMuted,
+    maxWidth: '70%',
+  },
 
-    headerTitle: {
-        fontSize: FONT_SIZES.title,
-        fontWeight: '700',
-        color: COLORS.primary,
-    },
+  resultBox: {
+    width: '100%',
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    backgroundColor: '#F1F5F9',
+    borderRadius: 14,
+    paddingVertical: 12,
+  },
+  resultItem: {
+    alignItems: 'center',
+    gap: 2,
+  },
+  resultItemLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: C.textMuted,
+  },
+  resultItemVal: {
+    fontSize: 16,
+    fontWeight: '800',
+    color: C.navy,
+  },
 
-    headerSubtitle: {
-        fontSize: FONT_SIZES.body,
-        color: COLORS.textSecondary,
-        marginTop: 2,
-    },
+  controlGroup: {
+    width: '100%',
+    gap: 10,
+    marginTop: 8,
+  },
+  primaryBtn: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.btnPrimary,
+    borderRadius: 16,
+    height: 54,
+    shadowColor: C.btnShadow,
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  btnDisabled: {
+    backgroundColor: '#94A3B8',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  primaryBtnText: {
+    color: '#FFFFFF',
+    fontSize: 15.5,
+    fontWeight: '800',
+  },
 
-    content: {
-        flex: 1,
-        justifyContent: 'center',
-    },
+  pauseBtn: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    borderRadius: 16,
+    height: 54,
+  },
+  pauseBtnText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: C.navy,
+  },
 
-    stateContainer: {
-        gap: SPACING.lg,
-    },
-
-    largeIconContainer: {
-        width: 88,
-        height: 88,
-        borderRadius: 44,
-        backgroundColor: COLORS.surface,
-        alignSelf: 'center',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-
-    syncIconContainer: {
-        width: 88,
-        height: 88,
-        borderRadius: 44,
-        backgroundColor: COLORS.surface,
-        alignSelf: 'center',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-
-    stateTitle: {
-        fontSize: 24,
-        fontWeight: '700',
-        color: COLORS.text,
-        textAlign: 'center',
-    },
-
-    stateDescription: {
-        fontSize: FONT_SIZES.body,
-        color: COLORS.textSecondary,
-        textAlign: 'center',
-        lineHeight: 22,
-    },
-
-    summaryCard: {
-        backgroundColor: COLORS.surface,
-        borderRadius: 14,
-        padding: SPACING.lg,
-    },
-
-    summaryRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingVertical: SPACING.sm,
-    },
-
-    summaryLabel: {
-        fontSize: FONT_SIZES.body,
-        color: COLORS.textSecondary,
-    },
-
-    summaryValue: {
-        fontSize: 20,
-        fontWeight: '700',
-        color: COLORS.primary,
-    },
-
-    divider: {
-        height: 1,
-        backgroundColor: COLORS.background,
-    },
-
-    emptyText: {
-        fontSize: 13,
-        color: COLORS.textSecondary,
-        textAlign: 'center',
-    },
-
-    progressCard: {
-        backgroundColor: COLORS.surface,
-        borderRadius: 14,
-        padding: SPACING.lg,
-        gap: SPACING.md,
-    },
-
-    progressRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-
-    progressLabel: {
-        fontSize: FONT_SIZES.body,
-        color: COLORS.textSecondary,
-    },
-
-    progressValue: {
-        fontSize: FONT_SIZES.body,
-        fontWeight: '700',
-        color: COLORS.text,
-    },
-
-    progressBackground: {
-        height: 10,
-        borderRadius: 5,
-        backgroundColor: COLORS.background,
-        overflow: 'hidden',
-    },
-
-    progressFill: {
-        height: '100%',
-        backgroundColor: COLORS.primary,
-        borderRadius: 5,
-    },
-
-    progressFooter: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-    },
-
-    percentage: {
-        fontSize: 14,
-        fontWeight: '700',
-        color: COLORS.primary,
-    },
-
-    currentSample: {
-        flex: 1,
-        marginLeft: SPACING.md,
-        fontSize: 12,
-        color: COLORS.textSecondary,
-        textAlign: 'right',
-    },
-
-    resultCard: {
-        backgroundColor: COLORS.surface,
-        borderRadius: 14,
-        padding: SPACING.lg,
-        gap: SPACING.sm,
-    },
-
-    resultRow: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-    },
-
-    resultLabel: {
-        fontSize: FONT_SIZES.body,
-        color: COLORS.textSecondary,
-    },
-
-    resultValue: {
-        fontSize: FONT_SIZES.body,
-        fontWeight: '700',
-        color: COLORS.primary,
-    },
-
-    failedValue: {
-        color: '#DB2424',
-    },
-
-    actionRow: {
-        flexDirection: 'row',
-    },
-
-    mainAction: {
-        flex: 1,
-    },
-
-    completedActions: {
-        gap: SPACING.sm,
-    },
+  cancelBtn: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    backgroundColor: C.card,
+  },
+  cancelBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: C.navyMid,
+  },
 });

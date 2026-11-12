@@ -5,24 +5,20 @@ import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useAlertStore } from '@/store/alertStore';
 
 export default function AlertBar() {
-  const {
-    visible,
-    type,
-    message,
-    hideAlert,
-  } = useAlertStore();
-
-  const [translateY] = useState(() => new Animated.Value(-100));
+  const { visible, type, message, hideAlert } = useAlertStore();
+  const [translateY] = useState(() => new Animated.Value(-120));
 
   useEffect(() => {
     if (visible) {
       Animated.spring(translateY, {
         toValue: 0,
+        friction: 8,
+        tension: 40,
         useNativeDriver: true,
       }).start();
     } else {
       Animated.timing(translateY, {
-        toValue: -100,
+        toValue: -120,
         duration: 200,
         useNativeDriver: true,
       }).start();
@@ -34,51 +30,76 @@ export default function AlertBar() {
   const config = {
     error: {
       icon: AlertCircle,
-      title: 'Error',
-      color: '#db2424f3'
+      title: 'Action Failed',
+      bg: '#FEF2F2',
+      border: '#FECACA',
+      iconColor: '#DC2626',
+      titleColor: '#991B1B',
+      msgColor: '#B91C1C',
     },
     success: {
       icon: CheckCircle2,
       title: 'Success',
-      color: '#24db4cf3'
+      bg: '#F0FDF4',
+      border: '#BBF7D0',
+      iconColor: '#16A34A',
+      titleColor: '#166534',
+      msgColor: '#15803D',
     },
     warning: {
       icon: TriangleAlert,
-      title: 'Warning',
-      color: '#db8c24f3'
+      title: 'Attention',
+      bg: '#FFFBEB',
+      border: '#FDE68A',
+      iconColor: '#D97706',
+      titleColor: '#92400E',
+      msgColor: '#B45309',
     },
     info: {
       icon: Info,
-      title: 'Info',
-      color: '#2464dbf3'
+      title: 'Notice',
+      bg: '#EFF6FF',
+      border: '#BFDBFE',
+      iconColor: '#2563EB',
+      titleColor: '#1E40AF',
+      msgColor: '#1D4ED8',
     },
   };
 
-  const Icon = config[type].icon;
+  const current = config[type] || config.info;
+  const Icon = current.icon;
 
   return (
     <Animated.View
       style={[
         styles.container,
-        { transform: [{ translateY }],
-        backgroundColor: config[type].color },
+        {
+          transform: [{ translateY }],
+          backgroundColor: current.bg,
+          borderColor: current.border,
+        },
       ]}
     >
       <View style={styles.content}>
-        <Icon size={22} color="#FFFFFF" />
+        <View style={[styles.iconWrap, { backgroundColor: current.bg }]}>
+          <Icon size={22} color={current.iconColor} strokeWidth={2.2} />
+        </View>
 
         <View style={styles.textContainer}>
-          <Text style={styles.title}>
-            {config[type].title}
+          <Text style={[styles.title, { color: current.titleColor }]}>
+            {current.title}
           </Text>
-
-          <Text style={styles.message}>
+          <Text style={[styles.message, { color: current.msgColor }]}>
             {message}
           </Text>
         </View>
 
-        <Pressable onPress={hideAlert} hitSlop={10}>
-          <X size={20} color="#FFFFFF" />
+        <Pressable
+          onPress={hideAlert}
+          hitSlop={12}
+          style={styles.closeBtn}
+        >
+          <X size={18} color={current.titleColor} />
         </Pressable>
       </View>
     </Animated.View>
@@ -88,13 +109,17 @@ export default function AlertBar() {
 const styles = StyleSheet.create({
   container: {
     position: 'absolute',
-    top: 50,
+    top: 48,
     left: 16,
     right: 16,
-    zIndex: 9999,
-    elevation: 9999,
-    borderRadius: 12,
-    // backgroundColor: '#db2424',
+    zIndex: 99999,
+    elevation: 99999,
+    borderRadius: 18,
+    borderWidth: 1.5,
+    shadowColor: '#1A3A6E',
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 6 },
   },
 
   content: {
@@ -103,22 +128,40 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+  },
+
+  iconWrap: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   textContainer: {
     flex: 1,
-    marginHorizontal: 12,
   },
 
   title: {
-    color: '#FFFFFF',
     fontSize: 14,
-    fontWeight: '700',
+    fontWeight: '800',
+    letterSpacing: 0.2,
     marginBottom: 2,
   },
 
   message: {
-    color: '#FFFFFF',
     fontSize: 13,
+    fontWeight: '600',
+    lineHeight: 18,
+  },
+
+  closeBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: 'rgba(0, 0, 0, 0.05)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 });

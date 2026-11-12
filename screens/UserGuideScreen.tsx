@@ -1,22 +1,15 @@
-import { ActionButton } from '@/components/ActionButton';
-import { COLORS, FONT_SIZES, RADIUS, SPACING } from '@/constants/theme';
 import { router } from 'expo-router';
 import {
-  AlertTriangle,
   ArrowLeft,
-  BookOpen,
   Camera,
   CheckCircle2,
   ChevronDown,
-  ChevronUp,
+  ChevronRight,
   CloudUpload,
   Database,
   FileSpreadsheet,
   HelpCircle,
-  Info,
-  MapPin,
   Pencil,
-  ShieldCheck,
   Smartphone,
   Zap,
 } from 'lucide-react-native';
@@ -30,1079 +23,851 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
+// ─── Design tokens ──────────────────────────────────────────────────────────
+const C = {
+  page:      '#F0F5FF',
+  card:      '#FFFFFF',
+  border:    '#DDE8F5',
+  text:      '#0D1F3C',
+  textMid:   '#3D5A80',
+  textMuted: '#7A90B8',
+  white:     '#FFFFFF',
+  blue:      '#2563EB',
+  navy:      '#0D1F3C',
+};
+
+// ─── Section definitions ─────────────────────────────────────────────────────
+const SECTIONS = [
+  { id: 'quickstart',      color: '#D97706', bg: '#FFFBEB' },
+  { id: 'addSample',       color: '#059669', bg: '#ECFDF5' },
+  { id: 'photos',          color: '#2563EB', bg: '#EFF6FF' },
+  { id: 'meter',           color: '#7C3AED', bg: '#F5F3FF' },
+  { id: 'viewUpdate',      color: '#4F46E5', bg: '#EEF2FF' },
+  { id: 'export',          color: '#0D9488', bg: '#F0FDFA' },
+  { id: 'sync',            color: '#0284C7', bg: '#E0F2FE' },
+  { id: 'troubleshooting', color: '#475569', bg: '#F1F5F9' },
+  { id: 'bestPractices',   color: '#16A34A', bg: '#DCFCE7' },
+];
+
+const DEFAULT_STATE: Record<string, boolean> = {
+  quickstart: true,
+  addSample: false,
+  photos: false,
+  meter: false,
+  viewUpdate: false,
+  export: false,
+  sync: false,
+  troubleshooting: false,
+  bestPractices: false,
+};
+
 export default function UserGuideScreen() {
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    quickstart: true,
-    addSample: false,
-    photos: false,
-    meter: false,
-    viewUpdate: false,
-    export: false,
-    sync: false,
-    troubleshooting: false,
-    bestPractices: false,
-  });
+  const [expanded, setExpanded] = useState<Record<string, boolean>>(DEFAULT_STATE);
 
-  const toggleSection = (id: string) => {
-    setExpandedSections((prev) => ({
-      ...prev,
-      [id]: !prev[id],
-    }));
-  };
+  const toggle = (id: string) =>
+    setExpanded((prev) => ({ ...prev, [id]: !prev[id] }));
 
-  const expandAll = () => {
-    setExpandedSections({
-      quickstart: true,
-      addSample: true,
-      photos: true,
-      meter: true,
-      viewUpdate: true,
-      export: true,
-      sync: true,
-      troubleshooting: true,
-      bestPractices: true,
-    });
-  };
+  const expandAll = () =>
+    setExpanded(Object.fromEntries(SECTIONS.map((s) => [s.id, true])));
 
-  const collapseAll = () => {
-    setExpandedSections({
-      quickstart: false,
-      addSample: false,
-      photos: false,
-      meter: false,
-      viewUpdate: false,
-      export: false,
-      sync: false,
-      troubleshooting: false,
-      bestPractices: false,
-    });
-  };
+  const collapseAll = () =>
+    setExpanded(Object.fromEntries(SECTIONS.map((s) => [s.id, false])));
+
+  const color = (id: string) => SECTIONS.find((s) => s.id === id)!.color;
+  const bg    = (id: string) => SECTIONS.find((s) => s.id === id)!.bg;
 
   return (
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView
-        contentContainerStyle={styles.container}
-        showsVerticalScrollIndicator={false}
-      >
-        {/* Navigation & Header */}
-        <View style={styles.headerContainer}>
+    <SafeAreaView style={s.page}>
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
+
+        {/* ── HORIZONTAL HEADER CARD ────────────────────────────── */}
+        <View style={s.headerCard}>
           <Pressable
             onPress={() => router.back()}
-            style={({ pressed }) => [
-              styles.backButton,
-              pressed && styles.backButtonPressed,
-            ]}
+            style={({ pressed }) => [s.backBtn, pressed && { opacity: 0.7 }]}
             hitSlop={12}
             accessibilityRole="button"
-            accessibilityLabel="Back to Home"
+            accessibilityLabel="Back"
           >
-            <ArrowLeft size={22} color="#1E293B" />
+            <ArrowLeft size={20} color={C.text} />
           </Pressable>
 
-          <View style={styles.headerTextGroup}>
-            <View style={styles.headerTagRow}>
-              <View style={styles.headerTag}>
-                <BookOpen size={11} color="#2563EB" />
-                <Text style={styles.headerTagText}>FIELD TRAINING MANUAL</Text>
-              </View>
+          <View style={s.cardTextGroup}>
+            <View style={s.tagPill}>
+              <Text style={s.topTag}>TOCKLAI TEA RESEARCH INSTITUTE</Text>
             </View>
-            <Text style={styles.headerTitle}>
-              User Guide & <Text style={styles.headerTitleHighlight}>Training</Text>
-            </Text>
-            <Text style={styles.headerSubtitle}>
-              Standardized field protocol & ML dataset guide
-            </Text>
+            <Text style={s.mainTitle}>Field Training Manual</Text>
+            <Text style={s.subTitle}>Standard protocol for field leaf data collection</Text>
           </View>
         </View>
 
-        {/* Supervision & Scientific Purpose Card (Clean, modern academic design) */}
-        <View style={styles.heroCard}>
-          <View style={styles.heroTopRow}>
-            <View style={styles.instituteBadge}>
-              <Text style={styles.instituteBadgeText}>Tocklai Tea Research Institute</Text>
-            </View>
-            <View style={styles.protocolBadge}>
-              <ShieldCheck size={12} color="#059669" />
-              <Text style={styles.protocolBadgeText}>Official Guide</Text>
-            </View>
+        {/* ── EXPAND / COLLAPSE BAR ────────────────────────────── */}
+        <View style={s.controlBar}>
+          <View style={s.moduleCount}>
+            <Text style={s.moduleCountText}>9 TOPICS</Text>
           </View>
-
-          <Text style={styles.heroTitle}>Tea Leaf Data Collection Protocol</Text>
-          <Text style={styles.heroDescription}>
-            Standard field procedure for researchers and collectors to capture high-resolution leaf imagery, triplicate SPAD-502 chlorophyll measurements, and field metadata for ML model training.
-          </Text>
-
-          {/* Supervisor Card */}
-          <View style={styles.supervisorBox}>
-            <View style={styles.supervisorIconWrapper}>
-              <Info size={15} color="#2563EB" />
-            </View>
-            <View style={styles.supervisorContent}>
-              <Text style={styles.supervisorHeader}>SCIENTIFIC SUPERVISION</Text>
-              <Text style={styles.supervisorNames}>
-                Dr. Sangeeta Borchetia <Text style={styles.supervisorAmp}>&</Text> Dr. Prabir Barooah
-              </Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Quick Action bar */}
-        <View style={styles.controlRow}>
-          <View style={styles.modulesCountChip}>
-            <Text style={styles.modulesCountText}>9 MODULES</Text>
-          </View>
-          <View style={styles.toggleButtons}>
-            <Pressable onPress={expandAll} style={styles.actionChip}>
-              <Text style={styles.actionChipText}>Expand All</Text>
+          <View style={s.controlBtns}>
+            <Pressable onPress={expandAll} style={s.chip}>
+              <Text style={s.chipText}>Expand All</Text>
             </Pressable>
-            <Pressable onPress={collapseAll} style={styles.actionChip}>
-              <Text style={styles.actionChipText}>Collapse All</Text>
+            <Pressable onPress={collapseAll} style={s.chip}>
+              <Text style={s.chipText}>Collapse All</Text>
             </Pressable>
           </View>
         </View>
 
-        {/* 1. Quick Start Workflow */}
-        <AccordionCard
+        {/* ═══════════════════════════════════════════════════════
+            SECTION 1 — Quick-Start Workflow
+        ═══════════════════════════════════════════════════════ */}
+        <Section
           id="quickstart"
-          title="1. Quick-Start 5-Step Workflow"
-          badge="Essential"
-          badgeColor="#D97706"
-          icon={<Zap size={19} color="#D97706" />}
-          iconBg="#FEF3C7"
-          isExpanded={expandedSections.quickstart}
-          onToggle={() => toggleSection('quickstart')}
+          number="1"
+          title="Quick Start: 5 Easy Steps"
+          badge="Start Here"
+          icon={<Zap size={20} color={color('quickstart')} />}
+          color={color('quickstart')}
+          iconBg={bg('quickstart')}
+          isOpen={expanded.quickstart}
+          onToggle={() => toggle('quickstart')}
         >
-          <View style={styles.stepList}>
-            <StepItem
-              number="1"
-              title="Before going to the field (Online)"
-              desc="Log in to the app while connected to Wi-Fi or mobile network. The session stays saved offline."
-            />
-            <StepItem
-              number="2"
-              title="Collect tea sample & meter readings"
-              desc="Record 3 SPAD readings on the target leaf and observe plant health (healthy, chlorosis, pests, etc.)."
-            />
-            <StepItem
-              number="3"
-              title="Add Sample in app (Offline)"
-              desc="Open 'Add Sample', fill in Clone, Tree, Leaf number, Position, Flush, Garden, and Section. Capture leaf photos."
-            />
-            <StepItem
-              number="4"
-              title="Export records to SD Card / Phone (Offline backup)"
-              desc="Go to 'Export Records' at the end of the day to generate a CSV file and copy of images directly into your phone storage."
-            />
-            <StepItem
-              number="5"
-              title="Cloud Sync (When back in office)"
-              desc="Connect to office Wi-Fi, tap 'Cloud Sync' → 'Sync Now'. Keep the screen open until all records are uploaded."
-            />
-          </View>
-        </AccordionCard>
+          <InfoBanner
+            color="#D97706"
+            bg="#FFFBEB"
+            text="Follow these 5 steps every time you go to the field. It only takes a few minutes once you get used to it!"
+          />
+          <Step
+            num="1"
+            color={color('quickstart')}
+            title="Log in before going to the field"
+            desc="Open the app while on Wi-Fi or mobile network. Log in once — your session stays active offline throughout the day."
+          />
+          <Step
+            num="2"
+            color={color('quickstart')}
+            title="Collect tea sample & meter readings"
+            desc="Take 3 SPAD chlorophyll meter readings across the target leaf (tip, middle, and base)."
+          />
+          <Step
+            num="3"
+            color={color('quickstart')}
+            title="Add Sample in app (Offline)"
+            desc="Tap 'Add Sample', fill in Clone, Tree, Leaf number, Position, Flush, Garden, and Section. Capture leaf photos."
+          />
+          <Step
+            num="4"
+            color={color('quickstart')}
+            title="Export records to phone (Offline backup)"
+            desc="Tap 'Export Records' at the end of the day to save a CSV spreadsheet and copies of leaf photos onto your phone."
+          />
+          <Step
+            num="5"
+            color={color('quickstart')}
+            title="Cloud Sync (Back at office)"
+            desc="Connect to office Wi-Fi, tap 'Cloud Sync' → 'Sync Now'. Keep the screen open until all records upload."
+          />
+        </Section>
 
-        {/* 2. Adding a New Sample */}
-        <AccordionCard
+        {/* ═══════════════════════════════════════════════════════
+            SECTION 2 — Adding a Sample
+        ═══════════════════════════════════════════════════════ */}
+        <Section
           id="addSample"
-          title="2. Adding a New Sample"
+          number="2"
+          title="How to Add a New Sample"
           badge="Required"
-          badgeColor="#059669"
-          icon={<Pencil size={19} color="#059669" />}
-          iconBg="#ECFDF5"
-          isExpanded={expandedSections.addSample}
-          onToggle={() => toggleSection('addSample')}
+          icon={<Pencil size={20} color={color('addSample')} />}
+          color={color('addSample')}
+          iconBg={bg('addSample')}
+          isOpen={expanded.addSample}
+          onToggle={() => toggle('addSample')}
         >
-          <Text style={styles.bodyText}>
-            Tap <Text style={styles.boldText}>{"\"Add Sample\""}</Text> on the home screen.
-            Complete each section carefully:
+          <Text style={s.bodyText}>
+            Tap <Text style={s.bold}>"Add Sample"</Text> on the home screen and fill in each field:
           </Text>
+          <Bullet
+            color={color('addSample')}
+            title="Clone & Tree Number"
+            desc="Enter the clone code (e.g. TV1, TV2) and the specific tree number you are collecting from."
+          />
+          <Bullet
+            color={color('addSample')}
+            title="Leaf Number & Position"
+            desc="Enter which leaf (e.g. 1, 2, 3) and select its position: 1st leaf, 2nd leaf, 3rd leaf, or maintenance leaf."
+          />
+          <Bullet
+            color={color('addSample')}
+            title="SPAD Meter Readings"
+            desc="Enter your 3 chlorophyll meter readings in the three boxes. The app keeps all 3 values for research analysis."
+          />
+          <Bullet
+            color={color('addSample')}
+            title="Flush & Location"
+            desc="Choose the current flush season (First, Second, Monsoon, Autumn) and type the Garden and Section names."
+          />
+          <Bullet
+            color={color('addSample')}
+            title="Plant Health"
+            desc="Tick any health conditions you observe: Healthy, Wilting, Chlorosis, Scorching, Pest Damage, or Disease."
+          />
+          <Bullet
+            color={color('addSample')}
+            title="Remarks (Optional)"
+            desc="Add any extra notes — recent rain, unusual shade, leaf tears, or anything that might affect the readings."
+          />
+        </Section>
 
-          <View style={styles.bulletList}>
-            <BulletPoint
-              title="Sample Information"
-              desc="Enter Clone number (e.g. TV1, TV2), Tree number, Leaf number, and select the exact Leaf Position (1st leaf, 2nd leaf, 3rd leaf, maintenance leaf)."
-            />
-            <BulletPoint
-              title="Meter Readings"
-              desc="Input 3 distinct chlorophyll meter readings (SPAD values). The app automatically stores all 3 for research averaging."
-            />
-            <BulletPoint
-              title="Flush & Location"
-              desc="Choose the active Flush (First, Second, Monsoon, Autumn) and specify the Garden and Section names."
-            />
-            <BulletPoint
-              title="Plant Health Assessment"
-              desc="Check any active stress conditions: Healthy, Wilting, Chlorosis, Scorching, Pest Damage, or Disease."
-            />
-            <BulletPoint
-              title="Remarks"
-              desc="Optional field notes (e.g. recent rainfall, unusual shading, or physical leaf tears)."
-            />
-          </View>
-        </AccordionCard>
-
-        {/* 3. Image Capture Protocol */}
-        <AccordionCard
+        {/* ═══════════════════════════════════════════════════════
+            SECTION 3 — Leaf Photography
+        ═══════════════════════════════════════════════════════ */}
+        <Section
           id="photos"
-          title="3. Leaf Photography Guidelines"
-          badge="Critical for ML"
-          badgeColor="#2563EB"
-          icon={<Camera size={19} color="#2563EB" />}
-          iconBg="#EFF6FF"
-          isExpanded={expandedSections.photos}
-          onToggle={() => toggleSection('photos')}
+          number="3"
+          title="How to Take Good Leaf Photos"
+          badge="Very Important"
+          icon={<Camera size={20} color={color('photos')} />}
+          color={color('photos')}
+          iconBg={bg('photos')}
+          isOpen={expanded.photos}
+          onToggle={() => toggle('photos')}
         >
-          <View style={styles.tipBox}>
-            <Text style={styles.tipTitle}>Why photo quality matters:</Text>
-            <Text style={styles.tipText}>
-              The AI/Deep Learning model learns chlorophyll concentration directly from visual
-              features (green shades, vein texture, and color variations). Poor photos degrade model accuracy.
-            </Text>
-          </View>
-
-          <View style={styles.doDontContainer}>
-            <View style={styles.doBox}>
-              <Text style={styles.doTitle}>DO (Recommended)</Text>
-              <Text style={styles.doText}>• Lay leaf flat on a clean white/neutral background.</Text>
-              <Text style={styles.doText}>• Capture under uniform, diffused lighting (indoors or shaded).</Text>
-              <Text style={styles.doText}>• Keep the camera parallel to the leaf surface without tilting.</Text>
-              <Text style={styles.doText}>• Ensure the entire leaf including petiole and apex is in focus.</Text>
+          <InfoBanner
+            color="#1D4ED8"
+            bg="#EFF6FF"
+            text="Photo quality directly affects model accuracy. Clear, well-lit photos without shadows are essential for reliable chlorophyll estimation."
+          />
+          <View style={s.doDontRow}>
+            <View style={[s.doBox, { flex: 1 }]}>
+              <Text style={[s.doTitle, { color: '#059669' }]}>✅ DO THIS</Text>
+              <DoItem text="Place the leaf flat on a plain white sheet of paper" />
+              <DoItem text="Shoot indoors or in shade — avoid direct harsh sunlight" />
+              <DoItem text="Hold the camera directly above the leaf, parallel to it" />
+              <DoItem text="Ensure the whole leaf (tip to stem) is sharply in focus" />
             </View>
-
-            <View style={styles.dontBox}>
-              <Text style={styles.dontTitle}>AVOID</Text>
-              <Text style={styles.dontText}>• Harsh direct sunlight casting high-contrast dark shadows.</Text>
-              <Text style={styles.dontText}>• Blurry photos caused by hand shake or wind movement.</Text>
-              <Text style={styles.dontText}>• Fingers covering portions of the leaf blade.</Text>
-              <Text style={styles.dontText}>• Cluttered colorful backgrounds that confuse AI segmentation.</Text>
+            <View style={[s.dontBox, { flex: 1 }]}>
+              <Text style={[s.doTitle, { color: '#DC2626' }]}>❌ AVOID</Text>
+              <DoItem text="Dark shadows cast by direct sunlight" color="#991B1B" />
+              <DoItem text="Blurry photos from hand movement or wind" color="#991B1B" />
+              <DoItem text="Fingers covering any part of the leaf blade" color="#991B1B" />
+              <DoItem text="Busy or colourful backgrounds that confuse segmentation" color="#991B1B" />
             </View>
           </View>
-        </AccordionCard>
+        </Section>
 
-        {/* 4. Meter Readings (SPAD) */}
-        <AccordionCard
+        {/* ═══════════════════════════════════════════════════════
+            SECTION 4 — Chlorophyll Meter
+        ═══════════════════════════════════════════════════════ */}
+        <Section
           id="meter"
-          title="4. Chlorophyll Meter (SPAD) Instructions"
-          badge="Triplicate"
-          badgeColor="#7C3AED"
-          icon={<Smartphone size={19} color="#7C3AED" />}
-          iconBg="#F5F3FF"
-          isExpanded={expandedSections.meter}
-          onToggle={() => toggleSection('meter')}
+          number="4"
+          title="Using the Chlorophyll Meter (SPAD)"
+          badge="Take 3 Readings"
+          icon={<Smartphone size={20} color={color('meter')} />}
+          color={color('meter')}
+          iconBg={bg('meter')}
+          isOpen={expanded.meter}
+          onToggle={() => toggle('meter')}
         >
-          <Text style={styles.bodyText}>
-            For each sample, take <Text style={styles.boldText}>3 separate measurements</Text> across the leaf blade using the optical meter:
+          <Text style={s.bodyText}>
+            For every leaf sample, take <Text style={s.bold}>3 separate readings</Text> across the leaf blade using the optical sensor:
           </Text>
+          <Step
+            num="1"
+            color={color('meter')}
+            title="Upper part of the leaf (near tip)"
+            desc="Clip the meter on the upper half of the leaf, away from the thick central midrib."
+          />
+          <Step
+            num="2"
+            color={color('meter')}
+            title="Middle of the leaf (opposite side)"
+            desc="Move to the middle region of the leaf blade on the opposite side of Reading 1."
+          />
+          <Step
+            num="3"
+            color={color('meter')}
+            title="Lower part of the leaf (near stem)"
+            desc="Take the final reading near the base. Make sure the sensor is fully flat against the leaf."
+          />
+          <InfoBanner
+            color="#7C3AED"
+            bg="#F5F3FF"
+            text="⚠ Note: Keep optical sensor lenses clean and dry. Avoid placing the sensor directly on thick veins."
+          />
+        </Section>
 
-          <View style={styles.bulletList}>
-            <BulletPoint
-              title="Reading 1"
-              desc="Upper half of the leaf (near tip), avoiding the main thick midrib."
-            />
-            <BulletPoint
-              title="Reading 2"
-              desc="Middle region of the leaf blade, on the opposite side of Reading 1."
-            />
-            <BulletPoint
-              title="Reading 3"
-              desc="Lower half of the leaf (near base), ensuring full sensor contact."
-            />
-          </View>
-
-          <View style={styles.noteBox}>
-            <Text style={styles.noteText}>
-              <Text style={styles.boldText}>Important:</Text> Keep the optical sensor clean and dry. Avoid placing the sensor directly on major thick veins to ensure consistent readings.
-            </Text>
-          </View>
-        </AccordionCard>
-
-        {/* 5. View, Search & Edit Samples */}
-        <AccordionCard
+        {/* ═══════════════════════════════════════════════════════
+            SECTION 5 — Viewing & Editing Samples
+        ═══════════════════════════════════════════════════════ */}
+        <Section
           id="viewUpdate"
-          title="5. Reviewing & Editing Samples"
+          number="5"
+          title="Viewing & Editing Your Samples"
           badge="Management"
-          badgeColor="#4F46E5"
-          icon={<Database size={19} color="#4F46E5" />}
-          iconBg="#EEF2FF"
-          isExpanded={expandedSections.viewUpdate}
-          onToggle={() => toggleSection('viewUpdate')}
+          icon={<Database size={20} color={color('viewUpdate')} />}
+          color={color('viewUpdate')}
+          iconBg={bg('viewUpdate')}
+          isOpen={expanded.viewUpdate}
+          onToggle={() => toggle('viewUpdate')}
         >
-          <Text style={styles.bodyText}>
-            Need to check previous records or correct an entry?
+          <Text style={s.bodyText}>
+            Need to check previous entries or correct a mistake?
           </Text>
+          <Bullet
+            color={color('viewUpdate')}
+            title="Open 'View / Update Sample'"
+            desc="Tap this option on the home screen to view your entire collection history."
+          />
+          <Bullet
+            color={color('viewUpdate')}
+            title="Search for specific samples"
+            desc="Use the search bar at the top to filter by Clone, Tree, Leaf number, Garden, or ID."
+          />
+          <Bullet
+            color={color('viewUpdate')}
+            title="Inspect details"
+            desc="Tap any card to view its recorded metadata, triplicate SPAD readings, and captured photos."
+          />
+          <Bullet
+            color={color('viewUpdate')}
+            title="Edit values"
+            desc="Tap 'Edit Sample' to correct readings, remarks, or add/replace photos."
+          />
+        </Section>
 
-          <View style={styles.bulletList}>
-            <BulletPoint
-              title="Locate sample"
-              desc="Tap 'View/Update Sample' on the Home screen. Use the search bar to filter by Clone, Tree, Leaf number, Garden, or Sample ID."
-            />
-            <BulletPoint
-              title="Inspect details"
-              desc="Tap any sample card to review all recorded metadata, SPAD readings, and captured photos."
-            />
-            <BulletPoint
-              title="Edit values"
-              desc="Tap 'Edit Sample' to update meter values, remarks, or add/remove photos if an error was noticed."
-            />
-          </View>
-        </AccordionCard>
-
-        {/* 6. Exporting to Phone Storage (CSV + Images) */}
-        <AccordionCard
+        {/* ═══════════════════════════════════════════════════════
+            SECTION 6 — Exporting Data
+        ═══════════════════════════════════════════════════════ */}
+        <Section
           id="export"
-          title="6. Data Export (Offline CSV & Images)"
-          badge="Crucial Backup"
-          badgeColor="#0D9488"
-          icon={<FileSpreadsheet size={19} color="#0D9488" />}
-          iconBg="#CCFBF1"
-          isExpanded={expandedSections.export}
-          onToggle={() => toggleSection('export')}
+          number="6"
+          title="Exporting Data to Your Phone"
+          badge="Daily Backup"
+          icon={<FileSpreadsheet size={20} color={color('export')} />}
+          color={color('export')}
+          iconBg={bg('export')}
+          isOpen={expanded.export}
+          onToggle={() => toggle('export')}
         >
-          <Text style={styles.bodyText}>
-            Always perform an export before leaving the field. This ensures your collected data
-            is safely stored on your phone storage independently of cloud sync:
-          </Text>
+          <InfoBanner
+            color="#0D9488"
+            bg="#F0FDFA"
+            text="Always export before leaving the field — it guarantees your data is safely backed up on your phone storage independent of cloud connectivity."
+          />
+          <Step
+            num="1"
+            color={color('export')}
+            title="Tap 'Export Records' on the home screen"
+            desc="Opens the export manager where you can pick which samples to back up."
+          />
+          <Step
+            num="2"
+            color={color('export')}
+            title="Select samples"
+            desc="Choose specific entries or tap 'Select All' to export everything."
+          />
+          <Step
+            num="3"
+            color={color('export')}
+            title="Choose folder"
+            desc="In Android's folder picker, select a destination folder (e.g. Documents, Downloads, or SD card) and tap 'Use this folder' → 'Allow'."
+          />
+          <Step
+            num="4"
+            color={color('export')}
+            title="Done!"
+            desc="A CSV spreadsheet and all leaf images are copied to a timestamped folder on your phone."
+          />
+        </Section>
 
-          <View style={styles.stepList}>
-            <StepItem
-              number="1"
-              title="Open Export Screen"
-              desc="Tap 'Export Records' on the Home screen."
-            />
-            <StepItem
-              number="2"
-              title="Select Samples"
-              desc="Tap 'Export Records'. You can choose individual samples or tap 'Select All'."
-            />
-            <StepItem
-              number="3"
-              title="Choose Destination Folder"
-              desc="The Android folder picker will appear. Select a folder (e.g. Documents, Downloads, or an SD card folder) and tap 'Use this folder' → 'Allow'."
-            />
-            <StepItem
-              number="4"
-              title="Verify Output"
-              desc="The app generates a CSV spreadsheet with all fields and saves copies of all leaf images into a timestamped subfolder."
-            />
-          </View>
-        </AccordionCard>
-
-        {/* 7. Cloud Synchronization */}
-        <AccordionCard
+        {/* ═══════════════════════════════════════════════════════
+            SECTION 7 — Cloud Sync
+        ═══════════════════════════════════════════════════════ */}
+        <Section
           id="sync"
-          title="7. Cloud Synchronization"
-          badge="Online Only"
-          badgeColor="#0284C7"
-          icon={<CloudUpload size={19} color="#0284C7" />}
-          iconBg="#E0F2FE"
-          isExpanded={expandedSections.sync}
-          onToggle={() => toggleSection('sync')}
+          number="7"
+          title="Syncing Data to the Cloud"
+          badge="Needs Internet"
+          icon={<CloudUpload size={20} color={color('sync')} />}
+          color={color('sync')}
+          iconBg={bg('sync')}
+          isOpen={expanded.sync}
+          onToggle={() => toggle('sync')}
         >
-          <Text style={styles.bodyText}>
-            When you return to an area with stable internet (Wi-Fi or 4G/5G):
+          <Text style={s.bodyText}>
+            When you return to an area with reliable internet (Wi-Fi or mobile data):
           </Text>
+          <Bullet
+            color={color('sync')}
+            title="Check Cloud Sync status"
+            desc="The home screen displays how many samples and photos are waiting for cloud upload."
+          />
+          <Bullet
+            color={color('sync')}
+            title="Tap 'Sync Now'"
+            desc="The app securely uploads metadata to Supabase and leaf images to storage."
+          />
+          <Bullet
+            color={color('sync')}
+            title="Keep app open"
+            desc="Do not close or switch apps while upload is running to avoid interrupted network connections."
+          />
+          <Bullet
+            color={color('sync')}
+            title="Pause & resume"
+            desc="If connection fluctuates, tap 'Pause Sync'. You can safely resume later without losing progress."
+          />
+        </Section>
 
-          <View style={styles.bulletList}>
-            <BulletPoint
-              title="Check Status"
-              desc="Look at the 'Cloud Sync' card on the Home screen. It displays how many samples and images are awaiting sync."
-            />
-            <BulletPoint
-              title="Tap 'Sync Now'"
-              desc="The app will upload sample metadata to Supabase and leaf images to cloud storage."
-            />
-            <BulletPoint
-              title="Keep App Open"
-              desc="Do not switch apps or close the screen while synchronization is running to avoid interrupted network connections."
-            />
-            <BulletPoint
-              title="Pause & Resume"
-              desc="If network gets unstable, tap 'Pause Sync'. You can resume anytime without losing progress."
-            />
-          </View>
-        </AccordionCard>
-
-        {/* 8. Troubleshooting & FAQ */}
-        <AccordionCard
+        {/* ═══════════════════════════════════════════════════════
+            SECTION 8 — Troubleshooting
+        ═══════════════════════════════════════════════════════ */}
+        <Section
           id="troubleshooting"
-          title="8. Troubleshooting & FAQ"
-          badge="Support"
-          badgeColor="#475569"
-          icon={<HelpCircle size={19} color="#475569" />}
-          iconBg="#F1F5F9"
-          isExpanded={expandedSections.troubleshooting}
-          onToggle={() => toggleSection('troubleshooting')}
+          number="8"
+          title="Common Questions & Problems"
+          badge="Help"
+          icon={<HelpCircle size={20} color={color('troubleshooting')} />}
+          color={color('troubleshooting')}
+          iconBg={bg('troubleshooting')}
+          isOpen={expanded.troubleshooting}
+          onToggle={() => toggle('troubleshooting')}
         >
-          <FaqItem
-            q="The app says 'Location Required' on start. What should I do?"
-            a="Ensure phone GPS is enabled and grant Location permission when prompted. If photos are captured indoors at the lab, the app still requires initial GPS permission once during startup."
+          <Faq
+            q="The app asks for 'Location Required' on start. What should I do?"
+            a="Ensure phone GPS is on and grant location permission. The app logs GPS coordinates once during initialization for field geotagging."
           />
-          <FaqItem
-            q="Can I use the app completely offline without internet?"
-            a="YES! The app uses an internal SQLite database and offline phone storage. You only need internet for two actions: initial login and final cloud sync."
+          <Faq
+            q="Can I use this app completely offline?"
+            a="YES! Everything works offline (collecting samples, taking photos, exporting CSV and images). You only need internet for logging in the first time and syncing to cloud at the end."
           />
-          <FaqItem
+          <Faq
             q="What if I accidentally tap Logout while in the field?"
-            a="DO NOT log out in the field if there is no internet, because logging back in requires internet to reach the authentication server. If you stay logged in, the app works 100% offline."
+            a="Avoid logging out in the field without internet, as logging back in requires reaching the auth server. Your offline session stays valid indefinitely as long as you do not log out."
           />
-          <FaqItem
-            q="Cloud sync is taking too long or stalled on an image."
-            a="Check your Wi-Fi or mobile data signal. If stuck, tap 'Pause Sync' → verify your connection → tap 'Resume Sync'. Remember you can always use 'Export Records' as an immediate offline backup."
+          <Faq
+            q="Cloud sync is stuck or slow."
+            a="Check your Wi-Fi or mobile signal. Tap 'Pause Sync' → confirm connection → tap 'Resume'. Remember that 'Export Records' is always available as an immediate local backup."
           />
-          <FaqItem
-            q="When should I use 'Clear Records'?"
-            a="ONLY after you have confirmed that your data is safely exported to CSV or successfully synced to the cloud. Clearing records permanently deletes them from local phone storage."
+          <Faq
+            q="When is it safe to use 'Clear Records'?"
+            a="ONLY after you have confirmed that your data is safely exported to CSV or completely synced to the cloud. Clearing permanently removes records from local phone storage."
           />
-        </AccordionCard>
+        </Section>
 
-        {/* 9. Best Practices Checklist */}
-        <AccordionCard
+        {/* ═══════════════════════════════════════════════════════
+            SECTION 9 — Daily Checklist
+        ═══════════════════════════════════════════════════════ */}
+        <Section
           id="bestPractices"
-          title="9. Daily Field Checklist"
-          badge="Daily"
-          badgeColor="#16A34A"
-          icon={<CheckCircle2 size={19} color="#16A34A" />}
-          iconBg="#DCFCE7"
-          isExpanded={expandedSections.bestPractices}
-          onToggle={() => toggleSection('bestPractices')}
+          number="9"
+          title="Daily Field Checklist"
+          badge="Every Day"
+          icon={<CheckCircle2 size={20} color={color('bestPractices')} />}
+          color={color('bestPractices')}
+          iconBg={bg('bestPractices')}
+          isOpen={expanded.bestPractices}
+          onToggle={() => toggle('bestPractices')}
         >
-          <View style={styles.checklist}>
-            <ChecklistItem text="Phone battery charged above 80% before heading to field." />
-            <ChecklistItem text="Phone storage has at least 2 GB of free space." />
-            <ChecklistItem text="SPAD meter calibrated and sensor lenses wiped clean." />
-            <ChecklistItem text="App already logged in while on office Wi-Fi." />
-            <ChecklistItem text="Neutral white sheet / clipboard ready for leaf photography." />
-            <ChecklistItem text="End-of-day: Exported all records to phone folder (CSV + images)." />
-            <ChecklistItem text="Office return: Ran Cloud Sync to upload all data to the research server." />
-          </View>
-        </AccordionCard>
+          <Text style={s.bodyText}>Before heading out to the field:</Text>
+          <CheckItem text="Phone battery charged above 80%" />
+          <CheckItem text="Phone storage has at least 2 GB free space" />
+          <CheckItem text="SPAD meter calibrated and sensor lenses wiped clean" />
+          <CheckItem text="App already logged in while on office Wi-Fi" />
+          <CheckItem text="Plain white paper or clipboard ready for photo background" />
+          <Text style={[s.bodyText, { marginTop: 14, fontWeight: '700', color: color('bestPractices') }]}>
+            Before leaving the field:
+          </Text>
+          <CheckItem text="Exported all samples to phone (CSV + photos)" />
+          <Text style={[s.bodyText, { marginTop: 14, fontWeight: '700', color: color('bestPractices') }]}>
+            When back at office:
+          </Text>
+          <CheckItem text="Ran Cloud Sync and verified all samples uploaded" />
+        </Section>
 
-        {/* Bottom Back Button */}
-        <View style={styles.bottomButtons}>
-          <ActionButton
-            label="Back to Home Dashboard"
-            onPress={() => router.back()}
-            variant="guide"
-            icon={<ArrowLeft size={20} color="#FFFFFF" />}
-          />
-        </View>
+        {/* ── BACK BUTTON ─────────────────────────────────────── */}
+        <Pressable
+          onPress={() => router.back()}
+          style={({ pressed }) => [s.backFooterBtn, pressed && { opacity: 0.8 }]}
+        >
+          <ArrowLeft size={18} color={C.white} />
+          <Text style={s.backFooterText}>Back to Home</Text>
+        </Pressable>
 
-        {/* Footer info */}
-        <Text style={styles.footerNote}>
-          Tea Leaf Data Collection System • TTRI Research Documentation
+        <Text style={s.footer}>
+          Tocklai Tea Research Institute • TTRI Research Documentation
         </Text>
       </ScrollView>
     </SafeAreaView>
   );
 }
 
-// -------------------------------------------------------------
-// Helper UI Components
-// -------------------------------------------------------------
+// ─── Helper components ────────────────────────────────────────────────────────
 
-function AccordionCard({
-  id,
-  title,
-  badge,
-  badgeColor,
-  icon,
-  iconBg,
-  children,
-  isExpanded,
-  onToggle,
-}: {
-  id: string;
-  title: string;
-  badge?: string;
-  badgeColor?: string;
-  icon: React.ReactNode;
-  iconBg?: string;
-  children: React.ReactNode;
-  isExpanded: boolean;
-  onToggle: () => void;
-}) {
-  return (
-    <View style={styles.card}>
-      <Pressable onPress={onToggle} style={styles.cardHeader}>
-        <View style={styles.cardHeaderLeft}>
-          <View style={[styles.iconCircle, iconBg ? { backgroundColor: iconBg } : null]}>
-            {icon}
-          </View>
-          <View style={styles.cardHeaderTitles}>
-            <View style={styles.titleRow}>
-              <Text style={styles.cardTitle}>{title}</Text>
-              {badge && (
-                <View style={[styles.badgePill, badgeColor ? { backgroundColor: `${badgeColor}15` } : null]}>
-                  <Text style={[styles.badgePillText, badgeColor ? { color: badgeColor } : null]}>
-                    {badge}
-                  </Text>
-                </View>
-              )}
-            </View>
-          </View>
-        </View>
-        {isExpanded ? (
-          <ChevronUp size={20} color="#64748B" />
-        ) : (
-          <ChevronDown size={20} color="#64748B" />
-        )}
-      </Pressable>
-
-      {isExpanded && <View style={styles.cardBody}>{children}</View>}
-    </View>
-  );
-}
-
-function StepItem({
+function Section({
   number,
   title,
-  desc,
+  badge,
+  icon,
+  color,
+  iconBg,
+  isOpen,
+  onToggle,
+  children,
 }: {
+  id: string;
   number: string;
   title: string;
-  desc: string;
+  badge?: string;
+  icon: React.ReactNode;
+  color: string;
+  iconBg: string;
+  isOpen: boolean;
+  onToggle: () => void;
+  children: React.ReactNode;
 }) {
   return (
-    <View style={styles.stepItem}>
-      <View style={styles.stepBadge}>
-        <Text style={styles.stepBadgeText}>{number}</Text>
+    <View style={[sc.card, isOpen && { borderLeftColor: color, borderLeftWidth: 4 }]}>
+      <Pressable onPress={onToggle} style={sc.header}>
+        <View style={[sc.iconWrap, { backgroundColor: iconBg }]}>{icon}</View>
+        <View style={sc.titleWrap}>
+          <Text style={sc.number} numberOfLines={1}>
+            <Text style={{ color }}>{number}. </Text>
+            {title}
+          </Text>
+          {badge && (
+            <View style={[sc.badge, { backgroundColor: `${color}18` }]}>
+              <Text style={[sc.badgeText, { color }]}>{badge}</Text>
+            </View>
+          )}
+        </View>
+        <ChevronDown
+          size={20}
+          color="#94A3B8"
+          style={{ transform: [{ rotate: isOpen ? '180deg' : '0deg' }] }}
+        />
+      </Pressable>
+      {isOpen && <View style={sc.body}>{children}</View>}
+    </View>
+  );
+}
+
+function Step({ num, color, title, desc }: { num: string; color: string; title: string; desc: string }) {
+  return (
+    <View style={sc.step}>
+      <View style={[sc.stepNum, { backgroundColor: color }]}>
+        <Text style={sc.stepNumText}>{num}</Text>
       </View>
-      <View style={styles.stepContent}>
-        <Text style={styles.stepTitle}>{title}</Text>
-        <Text style={styles.stepDesc}>{desc}</Text>
+      <View style={sc.stepContent}>
+        <Text style={sc.stepTitle}>{title}</Text>
+        <Text style={sc.stepDesc}>{desc}</Text>
       </View>
     </View>
   );
 }
 
-function BulletPoint({ title, desc }: { title: string; desc: string }) {
+function Bullet({ color, title, desc }: { color: string; title: string; desc: string }) {
   return (
-    <View style={styles.bulletItem}>
-      <View style={styles.bulletDot} />
-      <Text style={styles.bulletText}>
-        <Text style={styles.boldText}>{title}: </Text>
-        {desc}
+    <View style={sc.bullet}>
+      <View style={[sc.bulletDot, { backgroundColor: color }]} />
+      <Text style={sc.bulletText}>
+        <Text style={[sc.bold, { color }]}>{title}: </Text>
+        <Text style={sc.bulletDesc}>{desc}</Text>
       </Text>
     </View>
   );
 }
 
-function FaqItem({ q, a }: { q: string; a: string }) {
+function InfoBanner({ color, bg, text }: { color: string; bg: string; text: string }) {
   return (
-    <View style={styles.faqItem}>
-      <Text style={styles.faqQuestion}>Q: {q}</Text>
-      <Text style={styles.faqAnswer}>{a}</Text>
+    <View style={[sc.banner, { backgroundColor: bg, borderLeftColor: color }]}>
+      <Text style={[sc.bannerText, { color }]}>{text}</Text>
     </View>
   );
 }
 
-function ChecklistItem({ text }: { text: string }) {
+function DoItem({ text, color = '#166534' }: { text: string; color?: string }) {
   return (
-    <View style={styles.checkRow}>
+    <View style={sc.doItem}>
+      <ChevronRight size={12} color={color} style={{ marginTop: 2 }} />
+      <Text style={[sc.doText, { color }]}>{text}</Text>
+    </View>
+  );
+}
+
+function Faq({ q, a }: { q: string; a: string }) {
+  return (
+    <View style={sc.faq}>
+      <Text style={sc.faqQ}>❓ {q}</Text>
+      <Text style={sc.faqA}>{a}</Text>
+    </View>
+  );
+}
+
+function CheckItem({ text }: { text: string }) {
+  return (
+    <View style={sc.checkItem}>
       <CheckCircle2 size={18} color="#16A34A" />
-      <Text style={styles.checkText}>{text}</Text>
+      <Text style={sc.checkText}>{text}</Text>
     </View>
   );
 }
 
-// -------------------------------------------------------------
-// Stylesheet
-// -------------------------------------------------------------
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
-const styles = StyleSheet.create({
-  safeArea: {
-    flex: 1,
-    backgroundColor: '#F8FAFC',
-  },
-  container: {
-    padding: SPACING.md,
-    paddingBottom: SPACING.xxl,
-    gap: 14,
-  },
+const s = StyleSheet.create({
+  page:   { flex: 1, backgroundColor: C.page },
+  scroll: { paddingBottom: 40 },
 
-  // Navigation & Header
-  headerContainer: {
+  /* Horizontal Header Card */
+  headerCard: {
+    backgroundColor: C.card,
+    marginHorizontal: 16,
+    marginTop: 10,
+    marginBottom: 12,
+    borderRadius: 18,
+    padding: 16,
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 12,
-    marginTop: 4,
-    marginBottom: 2,
+    alignItems: 'center',
+    gap: 14,
+    borderWidth: 1.5,
+    borderColor: C.border,
+    shadowColor: '#1A3A6E',
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 4,
   },
-  backButton: {
+  backBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    backgroundColor: '#F5F7FF',
+    borderWidth: 1,
+    borderColor: '#D8E2F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  cardTextGroup: {
+    flex: 1,
+  },
+  tagPill: {
+    alignSelf: 'flex-start',
+    backgroundColor: '#EFF6FF',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 6,
+    marginBottom: 4,
+  },
+  topTag: {
+    fontSize: 9.5,
+    fontWeight: '800',
+    color: C.blue,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+  },
+  mainTitle: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: C.text,
+    letterSpacing: -0.2,
+  },
+  subTitle: {
+    fontSize: 12,
+    color: C.textMuted,
+    marginTop: 2,
+    lineHeight: 16,
+  },
+
+  /* Control bar */
+  controlBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: 16,
+    marginBottom: 12,
+    marginTop: 2,
+  },
+  moduleCount: {
+    backgroundColor: '#E2E8F0',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+  },
+  moduleCountText: { fontSize: 11, fontWeight: '800', color: C.textMid, letterSpacing: 0.5 },
+  controlBtns: { flexDirection: 'row', gap: 8 },
+  chip: {
+    backgroundColor: C.card,
+    borderWidth: 1.5,
+    borderColor: C.border,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 10,
+    shadowColor: '#1A3A6E',
+    shadowOpacity: 0.04,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 1,
+  },
+  chipText: { fontSize: 12, fontWeight: '700', color: C.blue },
+
+  /* Body text */
+  bodyText: { fontSize: 14, color: C.textMid, lineHeight: 22, marginBottom: 10 },
+  bold:     { fontWeight: '700', color: C.text },
+
+  /* Do / Don't */
+  doDontRow: { flexDirection: 'row', gap: 10, marginTop: 8 },
+  doBox:   { backgroundColor: '#F0FDF4', borderRadius: 12, padding: 12, gap: 6 },
+  dontBox: { backgroundColor: '#FEF2F2', borderRadius: 12, padding: 12, gap: 6 },
+  doTitle: { fontSize: 12, fontWeight: '800', marginBottom: 4 },
+
+  /* Back footer */
+  backFooterBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: C.navy,
+    marginHorizontal: 16,
+    borderRadius: 14,
+    height: 52,
+    marginTop: 14,
+    shadowColor: C.navy,
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  backFooterText: { color: C.white, fontSize: 15, fontWeight: '700' },
+
+  footer: {
+    textAlign: 'center',
+    fontSize: 11,
+    color: C.textMuted,
+    marginTop: 16,
+    lineHeight: 18,
+  },
+});
+
+const sc = StyleSheet.create({
+  /* Section card */
+  card: {
+    backgroundColor: C.card,
+    borderRadius: 16,
+    marginHorizontal: 16,
+    marginBottom: 10,
+    borderLeftWidth: 0,
+    borderLeftColor: 'transparent',
+    shadowColor: '#1A3A6E',
+    shadowOpacity: 0.07,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
+    overflow: 'hidden',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    gap: 12,
+  },
+  iconWrap: {
     width: 42,
     height: 42,
     borderRadius: 21,
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 2,
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.06,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 3,
-    elevation: 2,
-  },
-  backButtonPressed: {
-    backgroundColor: '#F1F5F9',
-    opacity: 0.8,
-  },
-  headerTextGroup: {
-    flex: 1,
-  },
-  headerTagRow: {
-    flexDirection: 'row',
-    marginBottom: 4,
-  },
-  headerTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: '#EFF6FF',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#DBEAFE',
-  },
-  headerTagText: {
-    fontSize: 10,
-    fontWeight: '800',
-    color: '#1D4ED8',
-    letterSpacing: 0.6,
-  },
-  headerTitle: {
-    fontSize: 23,
-    fontWeight: '800',
-    color: '#0F172A',
-    letterSpacing: -0.3,
-  },
-  headerTitleHighlight: {
-    color: '#2563EB',
-  },
-  headerSubtitle: {
-    fontSize: 13,
-    color: '#64748B',
-    marginTop: 2,
-  },
-
-  // Hero Card (Clean, modern academic white surface with subtle slate accents)
-  heroCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.lg,
-    padding: SPACING.lg,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.05,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 8,
-    elevation: 2,
-  },
-  heroTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: 8,
-    flexWrap: 'wrap',
-    marginBottom: 10,
-  },
-  instituteBadge: {
-    backgroundColor: '#F1F5F9',
-    paddingHorizontal: 9,
-    paddingVertical: 4,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-  },
-  instituteBadgeText: {
-    color: '#334155',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  protocolBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-    backgroundColor: '#ECFDF5',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#A7F3D0',
-  },
-  protocolBadgeText: {
-    color: '#065F46',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  heroTitle: {
-    color: '#0F172A',
-    fontSize: 19,
-    fontWeight: '800',
-    letterSpacing: -0.2,
-    marginBottom: 6,
-  },
-  heroDescription: {
-    color: '#475569',
-    fontSize: 13.5,
-    lineHeight: 20,
-  },
-  supervisorBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    marginTop: 14,
-    backgroundColor: '#F8FAFC',
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    padding: 10,
-  },
-  supervisorIconWrapper: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  supervisorContent: {
-    flex: 1,
-  },
-  supervisorHeader: {
-    fontSize: 9.5,
-    fontWeight: '800',
-    color: '#64748B',
-    letterSpacing: 0.6,
-  },
-  supervisorNames: {
-    fontSize: 12.5,
-    fontWeight: '700',
-    color: '#1E293B',
-    marginTop: 1,
-  },
-  supervisorAmp: {
-    color: '#2563EB',
-    fontWeight: '700',
-  },
-
-  // Action / Count Bar
-  controlRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 2,
-    paddingHorizontal: 2,
-  },
-  modulesCountChip: {
-    backgroundColor: '#E2E8F0',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  modulesCountText: {
-    fontSize: 11,
-    fontWeight: '800',
-    color: '#475569',
-    letterSpacing: 0.5,
-  },
-  toggleButtons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  actionChip: {
-    backgroundColor: '#FFFFFF',
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: 10,
-    paddingVertical: 5,
-    borderRadius: 6,
-  },
-  actionChipText: {
-    color: '#2563EB',
-    fontSize: 12,
-    fontWeight: '700',
-  },
-
-  // Accordion Card
-  card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    overflow: 'hidden',
-    shadowColor: '#0F172A',
-    shadowOpacity: 0.03,
-    shadowOffset: { width: 0, height: 1 },
-    shadowRadius: 4,
-    elevation: 1,
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: SPACING.md,
-    backgroundColor: '#FFFFFF',
-  },
-  cardHeaderLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.sm,
-    flex: 1,
-  },
-  iconCircle: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#F1F5F9',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  cardHeaderTitles: {
-    flex: 1,
-  },
-  titleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  cardTitle: {
-    fontSize: 14.5,
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-  badgePill: {
-    backgroundColor: '#FEF3C7',
+  titleWrap: { flex: 1 },
+  number:   { fontSize: 15, fontWeight: '700', color: C.text },
+  badge: {
+    alignSelf: 'flex-start',
+    marginTop: 4,
     paddingHorizontal: 8,
     paddingVertical: 2,
-    borderRadius: 12,
+    borderRadius: 10,
   },
-  badgePillText: {
-    color: '#92400E',
-    fontSize: 11,
-    fontWeight: '700',
-  },
-  cardBody: {
-    padding: SPACING.md,
-    paddingTop: 12,
+  badgeText: { fontSize: 11, fontWeight: '700' },
+
+  body: {
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    paddingTop: 4,
     borderTopWidth: 1,
-    borderTopColor: '#F1F5F9',
-    backgroundColor: '#FAFCFF',
+    borderTopColor: '#EEF2FF',
   },
 
-  // Common typography inside card
-  bodyText: {
-    fontSize: 13.5,
-    color: '#334155',
-    lineHeight: 20,
-    marginVertical: SPACING.xs,
-  },
-  boldText: {
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-
-  // Step item
-  stepList: {
-    gap: SPACING.sm,
-    marginTop: SPACING.xs,
-  },
-  stepItem: {
+  /* Step */
+  step: {
     flexDirection: 'row',
-    gap: SPACING.sm,
-    backgroundColor: '#FFFFFF',
-    padding: SPACING.sm,
-    borderRadius: RADIUS.sm,
+    gap: 12,
+    backgroundColor: '#F8FAFF',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: C.border,
   },
-  stepBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
-    backgroundColor: '#2563EB',
+  stepNum: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
+    flexShrink: 0,
   },
-  stepBadgeText: {
-    color: '#FFFFFF',
-    fontWeight: '800',
-    fontSize: 13,
-  },
-  stepContent: {
-    flex: 1,
-  },
-  stepTitle: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 2,
-  },
-  stepDesc: {
-    fontSize: 12.5,
-    color: '#475569',
-    lineHeight: 18,
-  },
+  stepNumText:  { color: '#fff', fontWeight: '800', fontSize: 14 },
+  stepContent:  { flex: 1 },
+  stepTitle:    { fontSize: 14, fontWeight: '700', color: C.text, marginBottom: 3, lineHeight: 20 },
+  stepDesc:     { fontSize: 13, color: C.textMid, lineHeight: 20 },
 
-  // Bullet list
-  bulletList: {
-    gap: SPACING.xs,
-    marginVertical: SPACING.xs,
-  },
-  bulletItem: {
+  /* Bullet */
+  bullet: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 10,
     alignItems: 'flex-start',
+    marginBottom: 10,
   },
-  bulletDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: '#2563EB',
-    marginTop: 7,
-  },
-  bulletText: {
-    fontSize: 13,
-    color: '#334155',
-    lineHeight: 19,
-    flex: 1,
-  },
+  bulletDot: { width: 7, height: 7, borderRadius: 4, marginTop: 8, flexShrink: 0 },
+  bulletText: { flex: 1, fontSize: 13.5, lineHeight: 21 },
+  bold:       { fontWeight: '700' },
+  bulletDesc: { color: C.textMid },
 
-  // Tip box
-  tipBox: {
-    backgroundColor: '#FFFBEB',
-    borderColor: '#FDE68A',
-    borderWidth: 1,
-    borderRadius: RADIUS.sm,
-    padding: SPACING.sm,
-    marginVertical: SPACING.xs,
+  /* Banner */
+  banner: {
+    borderLeftWidth: 4,
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 12,
   },
-  tipTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#92400E',
-    marginBottom: 2,
-  },
-  tipText: {
-    fontSize: 12.5,
-    color: '#78350F',
-    lineHeight: 18,
-  },
+  bannerText: { fontSize: 13.5, lineHeight: 21, fontWeight: '500' },
 
-  // Note Box
-  noteBox: {
-    backgroundColor: '#F0FDF4',
-    borderColor: '#BBF7D0',
-    borderWidth: 1,
-    borderRadius: RADIUS.sm,
-    padding: SPACING.sm,
-    marginTop: SPACING.xs,
-  },
-  noteText: {
-    fontSize: 12.5,
-    color: '#166534',
-    lineHeight: 18,
-  },
+  /* Do/Don't item */
+  doItem: { flexDirection: 'row', alignItems: 'flex-start', gap: 5, marginBottom: 4 },
+  doText: { flex: 1, fontSize: 12, lineHeight: 18 },
 
-  // Do / Don't
-  doDontContainer: {
-    gap: SPACING.sm,
-    marginTop: SPACING.xs,
-  },
-  doBox: {
-    backgroundColor: '#F0FDF4',
-    borderColor: '#86EFAC',
+  /* FAQ */
+  faq: {
+    backgroundColor: '#F8FAFF',
+    borderRadius: 12,
+    padding: 14,
+    marginBottom: 10,
     borderWidth: 1,
-    borderRadius: RADIUS.sm,
-    padding: SPACING.sm,
-    gap: 4,
+    borderColor: C.border,
   },
-  doTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#166534',
-    marginBottom: 2,
-  },
-  doText: {
-    fontSize: 12,
-    color: '#14532D',
-    lineHeight: 17,
-  },
-  dontBox: {
-    backgroundColor: '#FEF2F2',
-    borderColor: '#FECACA',
-    borderWidth: 1,
-    borderRadius: RADIUS.sm,
-    padding: SPACING.sm,
-    gap: 4,
-  },
-  dontTitle: {
-    fontSize: 13,
-    fontWeight: '800',
-    color: '#991B1B',
-    marginBottom: 2,
-  },
-  dontText: {
-    fontSize: 12,
-    color: '#7F1D1D',
-    lineHeight: 17,
-  },
+  faqQ: { fontSize: 13.5, fontWeight: '700', color: C.text, marginBottom: 6, lineHeight: 20 },
+  faqA: { fontSize: 13, color: C.textMid, lineHeight: 20 },
 
-  // FAQ
-  faqItem: {
-    backgroundColor: '#FFFFFF',
-    padding: SPACING.sm,
-    borderRadius: RADIUS.sm,
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    marginVertical: 4,
-  },
-  faqQuestion: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: '#0F172A',
-    marginBottom: 4,
-  },
-  faqAnswer: {
-    fontSize: 12.5,
-    color: '#475569',
-    lineHeight: 18,
-  },
-
-  // Checklist
-  checklist: {
-    gap: SPACING.sm,
-    marginTop: SPACING.xs,
-  },
-  checkRow: {
+  /* Checklist */
+  checkItem: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
-    backgroundColor: '#FFFFFF',
-    padding: SPACING.sm,
-    borderRadius: RADIUS.sm,
+    backgroundColor: '#F0FDF4',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 8,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#BBF7D0',
   },
-  checkText: {
-    fontSize: 12.5,
-    color: '#1E293B',
-    flex: 1,
-    lineHeight: 18,
-  },
-
-  // Bottom Buttons
-  bottomButtons: {
-    marginTop: SPACING.sm,
-  },
-  footerNote: {
-    textAlign: 'center',
-    fontSize: 11,
-    color: '#64748B',
-    marginTop: SPACING.xs,
-  },
+  checkText: { flex: 1, fontSize: 13.5, color: '#166534', lineHeight: 20 },
 });

@@ -1,4 +1,6 @@
+import { MapPin } from 'lucide-react-native';
 import { Control } from 'react-hook-form';
+import { View } from 'react-native';
 
 import { ControlledDropdownField } from '@/components/ControlledDropdownField';
 import { ControlledFormField } from '@/components/ControlledFormField';
@@ -14,11 +16,15 @@ export function CollectionSection({
   control,
 }: CollectionSectionProps) {
   return (
-    <SectionCard title="Collection Information">
+    <SectionCard
+      title="Collection Information"
+      badge="Location"
+      icon={<MapPin size={20} color="#D97706" />}
+    >
       <ControlledDropdownField
         control={control}
         name="flush"
-        label="Flush"
+        label="Flush Season"
         options={flushOptions}
       />
 
@@ -26,7 +32,7 @@ export function CollectionSection({
         control={control}
         name="gardenName"
         label="Garden Name"
-        placeholder="Enter garden name"
+        placeholder="e.g. Tocklai Experimental Garden"
         returnKeyType="next"
         requiredField={true}
       />
@@ -34,8 +40,8 @@ export function CollectionSection({
       <ControlledFormField
         control={control}
         name="sectionName"
-        label="Section Name"
-        placeholder="Enter section name"
+        label="Section / Block Name"
+        placeholder="e.g. Block A, Plot 3"
         returnKeyType="next"
       />
     </SectionCard>

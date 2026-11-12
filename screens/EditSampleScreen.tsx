@@ -1,40 +1,47 @@
 import { router, useFocusEffect, useLocalSearchParams } from 'expo-router';
+import { CheckCircle2, Edit3, X } from 'lucide-react-native';
 import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import {
   ActivityIndicator,
   Alert,
   BackHandler,
-  Pressable,
   ScrollView,
   StyleSheet,
   Text,
-  View
+  TouchableOpacity,
+  View,
 } from 'react-native';
+import ImageViewing from 'react-native-image-viewing';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
-import { ActionButton } from '@/components/ActionButton';
 import { AutoInfoPanel } from '@/components/AutoInfoPanel';
 import { CameraModal } from '@/components/CameraModal';
 import { ImageThumbnailList } from '@/components/ImageThumbnailList';
 import { SampleFields } from '@/components/SampleFields';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { SectionCard } from '@/components/SectionCard';
-import {
-  COLORS,
-  FONT_SIZES,
-  LAYOUT,
-  SPACING,
-} from '@/constants/theme';
+
 import { sampleRepository } from '@/database/sampleRepository';
 import { useImageCapture } from '@/hooks/useImageCapture';
 import { deleteSampleImage } from '@/services/imageService';
-import type {
-  Sample,
-  SampleFormInput,
-} from '@/types/sample';
+import type { Sample, SampleFormInput } from '@/types/sample';
 import { validateSample } from '@/utils/sampleValidation';
-import ImageViewing from 'react-native-image-viewing';
+
+const C = {
+  navy: '#0D1F3C',
+  navyMid: '#1E3A5F',
+  page: '#F0F5FF',
+  card: '#FFFFFF',
+  border: '#E2E8F0',
+  blue: '#2563EB',
+  blueLight: '#EFF6FF',
+  blueBorder: '#BFDBFE',
+  btnPrimary: '#1D3557',
+  btnShadow: '#0A1A30',
+  textMuted: '#64748B',
+  textDark: '#1E293B',
+};
 
 function formatDateTime(value: string) {
   const date = new Date(value);
@@ -45,17 +52,13 @@ function formatBoolean(value: boolean) {
   return value ? 'Yes' : 'No';
 }
 
-function DetailRow({
-  label,
-  value,
-}: {
-  label: string;
-  value: string;
-}) {
+function DetailRow({ label, value }: { label: string; value: string }) {
   return (
     <View style={styles.detailRow}>
       <Text style={styles.detailLabel}>{label}</Text>
-      <Text style={styles.detailValue}>{value}</Text>
+      <Text style={styles.detailValue} numberOfLines={2}>
+        {value}
+      </Text>
     </View>
   );
 }
@@ -69,41 +72,49 @@ function ViewSampleDetails({
 }) {
   return (
     <View style={styles.sections}>
-      <SectionCard title="Leaf Images">
-        <ImageThumbnailList
-          images={sample.images}
-          onImagePress={onImagePress}
-        />
+      <SectionCard title="Captured Leaf Photos" badge={`${sample.images.length} Photos`}>
+        <ImageThumbnailList images={sample.images} onImagePress={onImagePress} />
       </SectionCard>
 
-      <SectionCard title="Sample Information">
-        <DetailRow label="Sample ID" value={sample.id} />
-        <DetailRow label="Clone Number" value={sample.cloneNumber} />
-        <DetailRow label="Tree Number" value={sample.treeNumber} />
-        <DetailRow label="Leaf Number" value={sample.leafNumber} />
-        <DetailRow label="Leaf Position" value={sample.leafPosition} />
+      <SectionCard title="Sample Information" badge="Details">
+        <View style={styles.idCard}>
+          <Text style={styles.idCardLabel}>Sample ID</Text>
+          <Text style={styles.idCardValue} selectable>
+            {sample.id}
+          </Text>
+        </View>
+
+        <DetailRow label="Clone Number" value={sample.cloneNumber || '-'} />
+        <DetailRow label="Tree Number" value={sample.treeNumber || '-'} />
+        <DetailRow label="Leaf Number" value={sample.leafNumber || '-'} />
+        <DetailRow label="Leaf Position" value={sample.leafPosition || '-'} />
       </SectionCard>
 
-      <SectionCard title="Meter Readings">
-        <DetailRow label="Meter Reading 1" value={String(sample.meterReading1)} />
-        <DetailRow label="Meter Reading 2" value={String(sample.meterReading2)} />
-        <DetailRow label="Meter Reading 3" value={String(sample.meterReading3)} />
+      <SectionCard title="Chlorophyll Meter Readings" badge="SPAD">
+        <View style={styles.readingsGrid}>
+          <View style={styles.readingBox}>
+            <Text style={styles.readingBoxLabel}>Reading 1</Text>
+            <Text style={styles.readingBoxValue}>{sample.meterReading1}</Text>
+          </View>
+          <View style={styles.readingBox}>
+            <Text style={styles.readingBoxLabel}>Reading 2</Text>
+            <Text style={styles.readingBoxValue}>{sample.meterReading2}</Text>
+          </View>
+          <View style={styles.readingBox}>
+            <Text style={styles.readingBoxLabel}>Reading 3</Text>
+            <Text style={styles.readingBoxValue}>{sample.meterReading3}</Text>
+          </View>
+        </View>
       </SectionCard>
 
-      <SectionCard title="Collection Information">
-        <DetailRow label="Flush" value={sample.flush} />
-        {/* <DetailRow label="Flush Auto Detected" value={formatBoolean(sample.flushAutoDetected)} /> */}
-        {/* <DetailRow label="Wet Lab Required" value={formatBoolean(sample.wetLabRequired)} /> */}
-        {/* <DetailRow label="Wet Lab Completed" value={formatBoolean(sample.wetLabCompleted)} /> */}
+      <SectionCard title="Collection Information" badge="Location">
+        <DetailRow label="Flush Season" value={sample.flush || '-'} />
+        <DetailRow label="Garden Name" value={sample.gardenName || '-'} />
+        <DetailRow label="Section Name" value={sample.sectionName || '-'} />
       </SectionCard>
 
-      <SectionCard title="Location">
-        <DetailRow label="Garden Name" value={sample.gardenName} />
-        <DetailRow label="Section Name" value={sample.sectionName} />
-      </SectionCard>
-
-      <SectionCard title="Plant Health">
-        <DetailRow label="healthy" value={formatBoolean(sample.healthy)} />
+      <SectionCard title="Plant Health Observations" badge="Status">
+        <DetailRow label="Healthy" value={formatBoolean(sample.healthy)} />
         <DetailRow label="Wilting" value={formatBoolean(sample.wilting)} />
         <DetailRow label="Chlorosis" value={formatBoolean(sample.chlorosis)} />
         <DetailRow label="Scorching" value={formatBoolean(sample.scorching)} />
@@ -111,13 +122,13 @@ function ViewSampleDetails({
         <DetailRow label="Disease" value={formatBoolean(sample.disease)} />
       </SectionCard>
 
-      <SectionCard title="Remarks">
+      <SectionCard title="Field Notes & Remarks">
         <Text style={styles.remarksText}>
-          {sample.remarks.trim() || 'No remarks'}
+          {sample.remarks?.trim() || 'No remarks recorded.'}
         </Text>
       </SectionCard>
 
-      <SectionCard title="Automatic Information">
+      <SectionCard title="System Metadata" badge="Hardware">
         <AutoInfoPanel
           sampleIdPreview={sample.id}
           timestamp={formatDateTime(sample.createdAt)}
@@ -128,7 +139,6 @@ function ViewSampleDetails({
           installationId={sample.installationId}
           appVersion={sample.appVersion}
         />
-
         <DetailRow label="Created At" value={formatDateTime(sample.createdAt)} />
         <DetailRow label="Updated At" value={formatDateTime(sample.updatedAt)} />
       </SectionCard>
@@ -137,9 +147,7 @@ function ViewSampleDetails({
 }
 
 export default function EditSampleScreen() {
-  const { id } = useLocalSearchParams<{
-    id: string;
-  }>();
+  const { id } = useLocalSearchParams<{ id: string }>();
 
   const [sample, setSample] = useState<Sample | null>(null);
   const [loading, setLoading] = useState(true);
@@ -154,12 +162,7 @@ export default function EditSampleScreen() {
     setImageViewerVisible(true);
   }, []);
 
-  const {
-    control,
-    handleSubmit,
-    reset,
-    watch,
-  } = useForm<SampleFormInput>({
+  const { control, handleSubmit, reset } = useForm<SampleFormInput>({
     defaultValues: {
       cloneNumber: '',
       treeNumber: '',
@@ -168,7 +171,6 @@ export default function EditSampleScreen() {
       meterReading1: '',
       meterReading2: '',
       meterReading3: '',
-      wetLabRequired: false,
       wetLabCompleted: false,
       flush: 'first_flush',
       flushAutoDetected: false,
@@ -184,10 +186,6 @@ export default function EditSampleScreen() {
     },
   });
 
-  const cloneNumber = watch('cloneNumber');
-  const treeNumber = watch('treeNumber');
-  const leafNumber = watch('leafNumber');
-
   const {
     images,
     showCamera,
@@ -195,29 +193,21 @@ export default function EditSampleScreen() {
     openCamera,
     handleCapture,
     removeImage,
-    removeAndDeleteImage,
     setExistingImages,
     cleanupNewImages,
   } = useImageCapture();
 
   const loadSample = useCallback(async () => {
-    if (!id) {
-      return;
-    }
-
+    if (!id) return;
     setLoading(true);
-
     try {
       const loaded = await sampleRepository.getById(id);
-
       if (!loaded) {
         Alert.alert('Error', 'Sample not found.');
         router.back();
         return;
       }
-
       setSample(loaded);
-
       reset({
         cloneNumber: loaded.cloneNumber,
         treeNumber: loaded.treeNumber,
@@ -239,7 +229,6 @@ export default function EditSampleScreen() {
         disease: loaded.disease,
         remarks: loaded.remarks,
       });
-
       setExistingImages(loaded.images);
       setRemovedPaths([]);
     } catch {
@@ -253,70 +242,38 @@ export default function EditSampleScreen() {
   useFocusEffect(
     useCallback(() => {
       loadSample();
-    }, [loadSample]),
+    }, [loadSample])
   );
 
-  useEffect(() => {
-    if (!editMode) {
-      setRemovedPaths([]);
-    }
-  }, [editMode]);
-
-  const handleRemoveImage = useCallback((index: number) => {
-    const target = images[index];
-    const path = target?.filePath ?? target?.uri;
-
-    if (target?.isNew) {
-      removeAndDeleteImage(index);
-    } else {
-      if (path) {
-        setRemovedPaths((current) => [...current, path]);
+  const handleRemoveImage = useCallback(
+    (index: number) => {
+      const removed = images[index];
+      if (removed?.filePath && !removed.isNew) {
+        setRemovedPaths((prev) => [...prev, removed.filePath!]);
       }
       removeImage(index);
-    }
-  }, [images, removeAndDeleteImage, removeImage]);
+    },
+    [images, removeImage]
+  );
 
   const handleCancelEdit = useCallback(() => {
-    if (!sample) {
-      return;
-    }
-
-    reset({
-      cloneNumber: sample.cloneNumber,
-      treeNumber: sample.treeNumber,
-      leafNumber: sample.leafNumber,
-      leafPosition: sample.leafPosition,
-      meterReading1: sample.meterReading1.toString(),
-      meterReading2: sample.meterReading2.toString(),
-      meterReading3: sample.meterReading3.toString(),
-      wetLabCompleted: sample.wetLabCompleted,
-      flush: sample.flush,
-      flushAutoDetected: sample.flushAutoDetected,
-      gardenName: sample.gardenName,
-      sectionName: sample.sectionName,
-      healthy: sample.healthy,
-      wilting: sample.wilting,
-      chlorosis: sample.chlorosis,
-      scorching: sample.scorching,
-      pestDamage: sample.pestDamage,
-      disease: sample.disease,
-      remarks: sample.remarks,
-    });
     cleanupNewImages();
-    setExistingImages(sample.images);
-    setRemovedPaths([]);
+    if (sample) {
+      setExistingImages(sample.images);
+      setRemovedPaths([]);
+    }
     setEditMode(false);
-  }, [cleanupNewImages, reset, sample, setExistingImages]);
+  }, [cleanupNewImages, sample, setExistingImages]);
 
   useFocusEffect(
     useCallback(() => {
       const handleHardwareBack = () => {
         if (editMode) {
           handleCancelEdit();
-        } else {
-          cleanupNewImages();
-          router.back();
+          return true;
         }
+        cleanupNewImages();
+        router.back();
         return true;
       };
 
@@ -332,37 +289,32 @@ export default function EditSampleScreen() {
     if (!sample) return;
 
     const validation = validateSample(values);
-
     if (!validation.valid) {
       Alert.alert('Validation Error', validation.message);
       return;
     }
 
+    setSaving(true);
     try {
-      setSaving(true);
-
-      const updated = await sampleRepository.update(sample.id, {
+      const updatedImages = images.map((img) => img.filePath ?? img.uri);
+      await sampleRepository.update(sample.id, {
         ...values,
         meterReading1: Number(values.meterReading1),
         meterReading2: Number(values.meterReading2),
         meterReading3: Number(values.meterReading3),
-        images: images.map((image) => image.filePath ?? image.uri),
+        images: updatedImages,
       });
 
-      removedPaths.forEach(deleteSampleImage);
-      setSample(updated);
-      setExistingImages(updated.images);
+      for (const path of removedPaths) {
+        await deleteSampleImage(path);
+      }
+
       setRemovedPaths([]);
       setEditMode(false);
-
-      Alert.alert('Success', 'Sample updated successfully.');
+      await loadSample();
+      Alert.alert('Updated 🎉', 'Sample details have been saved.');
     } catch (err) {
-      Alert.alert(
-        'Update Failed',
-        err instanceof Error
-          ? err.message
-          : 'Failed to update sample.',
-      );
+      Alert.alert('Update Failed', err instanceof Error ? err.message : 'Could not save.');
     } finally {
       setSaving(false);
     }
@@ -371,53 +323,51 @@ export default function EditSampleScreen() {
   if (loading) {
     return (
       <SafeAreaView style={styles.loadingContainer}>
-        <ActivityIndicator
-          size="large"
-          color={COLORS.primary}
-        />
-
-        <Text style={styles.loadingText}>
-          Loading sample...
-        </Text>
+        <ActivityIndicator size="large" color={C.blue} />
+        <Text style={styles.loadingText}>Loading sample record…</Text>
       </SafeAreaView>
     );
   }
 
-  if (!sample) {
-    return null;
-  }
+  if (!sample) return null;
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
       >
-        <View style={styles.headerRow}>
-          <View style={styles.headerText}>
-            <ScreenHeader
-              title={editMode ? 'Edit Sample' : 'View Sample'}
-              subtitle={editMode ? 'Modify the selected sample' : 'Review the full details of this sample'}
-            />
-          </View>
+        {/* Header with Mode Toggle Pill */}
+        <View style={styles.headerBar}>
+          <ScreenHeader
+            title={editMode ? 'Edit Sample' : 'Sample Record'}
+            subtitle={editMode ? 'Modify and save updated field data' : 'Review details collected in field'}
+            onBack={editMode ? handleCancelEdit : undefined}
+          />
 
           {!editMode ? (
-            <Pressable
+            <TouchableOpacity
+              style={styles.editPillBtn}
               onPress={() => setEditMode(true)}
-              style={styles.editButton}
+              activeOpacity={0.8}
             >
-              <Text style={styles.editButtonText}>Edit</Text>
-            </Pressable>
+              <Edit3 size={15} color="#FFFFFF" />
+              <Text style={styles.editPillText}>Edit Sample</Text>
+            </TouchableOpacity>
           ) : null}
         </View>
 
         {editMode ? (
           <View style={styles.sections}>
-            <SectionCard title="Leaf Images">
-              <ActionButton
-                label="Capture Images"
+            <SectionCard title="Captured Leaf Photos" badge={`${images.length} Photos`}>
+              <TouchableOpacity
+                style={styles.captureBtn}
                 onPress={openCamera}
-              />
+                activeOpacity={0.8}
+              >
+                <Text style={styles.captureBtnText}>+ Capture New Photos</Text>
+              </TouchableOpacity>
 
               <ImageThumbnailList
                 images={images.map((image) => image.uri)}
@@ -428,51 +378,45 @@ export default function EditSampleScreen() {
 
             <SampleFields control={control} />
 
-            <SectionCard title="Automatic Information">
-              <AutoInfoPanel
-                sampleIdPreview={sample.id}
-                timestamp={formatDateTime(sample.createdAt)}
-                latitude={sample.gpsLatitude}
-                longitude={sample.gpsLongitude}
-                deviceManufacturer={sample.deviceManufacturer}
-                deviceModel={sample.deviceModel}
-                installationId={sample.installationId}
-                appVersion={sample.appVersion}
-              />
-            </SectionCard>
-
             <View style={styles.actions}>
-              <ActionButton
-                label={saving ? 'Updating...' : 'Update Sample'}
+              <TouchableOpacity
+                style={[styles.saveBtn, saving && styles.btnDisabled]}
                 onPress={onSubmit}
                 disabled={saving}
-              />
+                activeOpacity={0.85}
+              >
+                <CheckCircle2 size={18} color="#FFFFFF" style={{ marginRight: 8 }} />
+                <Text style={styles.saveBtnText}>
+                  {saving ? 'Updating Record…' : 'Save Changes'}
+                </Text>
+              </TouchableOpacity>
 
-              <ActionButton
-                label="Cancel Edit"
-                variant="secondary"
+              <TouchableOpacity
+                style={styles.cancelBtn}
                 onPress={handleCancelEdit}
                 disabled={saving}
-              />
+                activeOpacity={0.8}
+              >
+                <Text style={styles.cancelBtnText}>Cancel Editing</Text>
+              </TouchableOpacity>
             </View>
           </View>
         ) : (
-          <ViewSampleDetails
-            sample={sample}
-            onImagePress={handleImagePress}
-          />
-        )}
+          <View style={styles.viewContainer}>
+            <ViewSampleDetails sample={sample} onImagePress={handleImagePress} />
 
-        {!editMode ? (
-          <ActionButton
-            label="Back"
-            variant="secondary"
-            onPress={() => {
-              cleanupNewImages();
-              router.back();
-            }}
-          />
-        ) : null}
+            <TouchableOpacity
+              style={styles.backBtn}
+              onPress={() => {
+                cleanupNewImages();
+                router.back();
+              }}
+              activeOpacity={0.8}
+            >
+              <Text style={styles.backBtnText}>Back to Samples List</Text>
+            </TouchableOpacity>
+          </View>
+        )}
       </ScrollView>
 
       <CameraModal
@@ -498,69 +442,204 @@ export default function EditSampleScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: COLORS.background,
+    backgroundColor: C.page,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: COLORS.background,
+    backgroundColor: C.page,
+    gap: 12,
   },
   loadingText: {
-    marginTop: SPACING.md,
-    fontSize: FONT_SIZES.body,
-    color: COLORS.textSecondary,
+    fontSize: 14,
+    color: C.textMuted,
+    fontWeight: '600',
   },
   content: {
     flexGrow: 1,
-    paddingHorizontal: SPACING.lg,
-    paddingTop: SPACING.sm,
-    paddingBottom: SPACING.xl,
-    gap: SPACING.md,
+    paddingHorizontal: 18,
+    paddingTop: 12,
+    paddingBottom: 40,
   },
-  headerRow: {
+  headerBar: {
+    marginBottom: 8,
+  },
+  editPillBtn: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: SPACING.md,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    backgroundColor: C.blue,
+    borderRadius: 14,
+    height: 44,
+    marginTop: -6,
+    marginBottom: 16,
+    shadowColor: C.blue,
+    shadowOpacity: 0.25,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 3,
   },
-  headerText: {
-    flex: 1,
-  },
-  editButton: {
-    marginTop: SPACING.xs,
-    borderWidth: 2,
-    borderColor: COLORS.primary,
-    borderRadius: 8,
-    backgroundColor: COLORS.surface,
-    paddingHorizontal: SPACING.md,
-    paddingVertical: SPACING.sm,
-  },
-  editButtonText: {
-    fontSize: FONT_SIZES.body,
+  editPillText: {
+    color: '#FFFFFF',
+    fontSize: 14,
     fontWeight: '700',
-    color: COLORS.primary,
   },
+
   sections: {
-    gap: LAYOUT.sectionGap,
+    gap: 18,
   },
-  actions: {
-    gap: SPACING.md,
+  viewContainer: {
+    gap: 18,
   },
+
+  idCard: {
+    backgroundColor: '#F8FAFC',
+    borderRadius: 14,
+    padding: 12,
+    borderWidth: 1.5,
+    borderColor: '#E2E8F0',
+    marginBottom: 6,
+  },
+  idCardLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: C.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.6,
+    marginBottom: 4,
+  },
+  idCardValue: {
+    fontSize: 13,
+    fontFamily: 'monospace',
+    fontWeight: '700',
+    color: C.navy,
+  },
+
   detailRow: {
-    gap: SPACING.xs,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F1F5F9',
+    gap: 12,
   },
   detailLabel: {
-    fontSize: FONT_SIZES.body,
-    fontWeight: '700',
-    color: COLORS.text,
+    fontSize: 13.5,
+    fontWeight: '600',
+    color: C.textMuted,
+    flex: 1,
   },
   detailValue: {
-    fontSize: FONT_SIZES.body,
-    color: COLORS.textSecondary,
+    fontSize: 14,
+    fontWeight: '700',
+    color: C.navy,
+    textAlign: 'right',
+    flex: 1,
   },
+
+  readingsGrid: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  readingBox: {
+    flex: 1,
+    backgroundColor: '#F0FDF4',
+    borderWidth: 1.5,
+    borderColor: '#BBF7D0',
+    borderRadius: 14,
+    padding: 12,
+    alignItems: 'center',
+  },
+  readingBoxLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#166534',
+    marginBottom: 4,
+  },
+  readingBoxValue: {
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#15803D',
+  },
+
   remarksText: {
-    fontSize: FONT_SIZES.body,
-    color: COLORS.textSecondary,
-    lineHeight: 24,
+    fontSize: 14,
+    color: C.textDark,
+    lineHeight: 22,
+  },
+
+  captureBtn: {
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1.5,
+    borderColor: C.blueBorder,
+    borderRadius: 12,
+    paddingVertical: 12,
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  captureBtnText: {
+    color: C.blue,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+
+  actions: {
+    gap: 10,
+    marginTop: 8,
+  },
+  saveBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: C.btnPrimary,
+    borderRadius: 16,
+    height: 56,
+    shadowColor: C.btnShadow,
+    shadowOpacity: 0.35,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 6,
+  },
+  btnDisabled: {
+    backgroundColor: '#94A3B8',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  saveBtnText: {
+    color: '#FFFFFF',
+    fontSize: 16,
+    fontWeight: '800',
+  },
+  cancelBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 48,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    backgroundColor: C.card,
+  },
+  cancelBtnText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: C.navyMid,
+  },
+  backBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 52,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: '#CBD5E1',
+    backgroundColor: C.card,
+    marginTop: 8,
+  },
+  backBtnText: {
+    fontSize: 14.5,
+    fontWeight: '700',
+    color: C.navyMid,
   },
 });

@@ -1,13 +1,17 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Dropdown } from 'react-native-element-dropdown';
 
-import {
-  COLORS,
-  FONT_SIZES,
-  INPUT_HEIGHT,
-  RADIUS,
-  SPACING,
-} from '@/constants/theme';
+const C = {
+  navy: '#0D1F3C',
+  text: '#0D1F3C',
+  textMuted: '#7A90B8',
+  textLight: '#94A3B8',
+  inputBg: '#F8FAFC',
+  inputBorder: '#CBD5E1',
+  blue: '#2563EB',
+  danger: '#DC2626',
+  white: '#FFFFFF',
+};
 
 interface DropdownOption {
   label: string;
@@ -33,104 +37,100 @@ export function DropdownField({
 }: DropdownFieldProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>
-        {label}
-      </Text>
+      <Text style={styles.label}>{label}</Text>
 
       <Dropdown
         style={[
           styles.dropdown,
-          error && styles.dropdownError,
+          error ? styles.dropdownError : null,
         ]}
         containerStyle={styles.dropdownContainer}
         itemContainerStyle={styles.itemContainer}
-        activeColor="#E8F5E9"
-        iconColor={COLORS.text}
+        activeColor="#EFF6FF"
+        iconColor={C.navy}
         data={options}
         labelField="label"
         valueField="value"
         placeholder={placeholder}
         value={value}
-        maxHeight={320}
+        maxHeight={280}
+        dropdownPosition="top"
         onChange={(item) => onValueChange(item.value)}
         placeholderStyle={styles.placeholder}
         selectedTextStyle={styles.selectedText}
         itemTextStyle={styles.itemText}
       />
 
-      {error && (
-        <Text style={styles.error}>
-          {error}
-        </Text>
-      )}
+      {error ? <Text style={styles.error}>{error}</Text> : null}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: SPACING.sm,
-    flexDirection: 'row',
-    gap: 10,
-    alignItems: 'center'
+    marginBottom: 4,
+    gap: 8,
   },
 
   label: {
-    fontSize: FONT_SIZES.label,
-    fontWeight: '600',
-    color: COLORS.text,
-    marginBottom: SPACING.xs,
+    fontSize: 14,
+    fontWeight: '700',
+    color: C.navy,
   },
 
   dropdown: {
-    height: INPUT_HEIGHT,
-
-    borderWidth: 2,
-    borderColor: COLORS.border,
-
-    borderRadius: RADIUS.sm,
-
-    backgroundColor: COLORS.surface,
-
-    paddingHorizontal: SPACING.md,
-    // width: '50%',
-    flex: 1
+    height: 52,
+    borderWidth: 1.5,
+    borderColor: C.inputBorder,
+    borderRadius: 14,
+    backgroundColor: C.inputBg,
+    paddingHorizontal: 16,
   },
 
   dropdownError: {
-    borderColor: COLORS.danger,
+    borderColor: C.danger,
+    backgroundColor: '#FEF2F2',
   },
 
   dropdownContainer: {
-    borderRadius: RADIUS.md,
-    borderWidth: 1,
-    borderColor: COLORS.border,
+    borderRadius: 16,
+    backgroundColor: C.white,
+    borderColor: '#CBD5E1',
+    borderWidth: 1.5,
     overflow: 'hidden',
+    shadowColor: '#1A3A6E',
+    shadowOpacity: 0.16,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: -6 },
+    elevation: 10,
   },
 
   itemContainer: {
-    height: 56,
-    justifyContent: 'center',
-  },
-
-  selectedText: {
-    color: COLORS.text,
-    fontSize: FONT_SIZES.input,
+    paddingVertical: 4,
   },
 
   placeholder: {
-    color: COLORS.textSecondary,
-    fontSize: FONT_SIZES.input,
+    fontSize: 15,
+    color: C.textLight,
+  },
+
+  selectedText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: C.navy,
   },
 
   itemText: {
-    color: COLORS.text,
-    fontSize: FONT_SIZES.input,
+    fontSize: 14.5,
+    color: C.navy,
+    fontWeight: '600',
   },
 
   error: {
-    marginTop: SPACING.xs,
-    color: COLORS.danger,
-    fontSize: FONT_SIZES.helper,
+    fontSize: 12,
+    color: C.danger,
+    fontWeight: '600',
+    marginTop: 2,
+    marginLeft: 2,
   },
 });
