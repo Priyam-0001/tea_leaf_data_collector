@@ -93,6 +93,36 @@ async function hydrateSample(row: SampleRow): Promise<Sample> {
   return rowToSample(row, images);
 }
 
+async function hydrateSampleBatch(rows: SampleRow[]): Promise<Sample[]> {
+  if (rows.length === 0) return [];
+
+  const db = await getDatabase();
+  const sampleIds = rows.map((r) => r.id);
+  const imagesBySampleId = new Map<string, string[]>();
+
+  // Chunk queries to stay within SQLite variable limits
+  const CHUNK_SIZE = 500;
+  for (let i = 0; i < sampleIds.length; i += CHUNK_SIZE) {
+    const chunk = sampleIds.slice(i, i + CHUNK_SIZE);
+    const placeholders = chunk.map(() => '?').join(',');
+    const imageRows = await db.getAllAsync<SampleImageRow>(
+      `SELECT * FROM sample_images WHERE sample_id IN (${placeholders}) ORDER BY sort_order ASC`,
+      ...chunk,
+    );
+
+    for (const img of imageRows) {
+      const list = imagesBySampleId.get(img.sample_id);
+      if (list) {
+        list.push(img.file_path);
+      } else {
+        imagesBySampleId.set(img.sample_id, [img.file_path]);
+      }
+    }
+  }
+
+  return rows.map((row) => rowToSample(row, imagesBySampleId.get(row.id) ?? []));
+}
+
 function getActiveUserId(): string {
   const session = useAuthStore.getState().session;
   if (!session?.user) {
@@ -257,7 +287,7 @@ export const sampleRepository = {
       'SELECT * FROM samples WHERE user_id = ? ORDER BY datetime(created_at) DESC',
       userId,
     );
-    return Promise.all(rows.map((row) => hydrateSample(row)));
+    return hydrateSampleBatch(rows);
   },
 
   async getById(id: string): Promise<Sample | null> {
@@ -329,7 +359,7 @@ export const sampleRepository = {
     const sql = `SELECT * FROM samples ${whereClause} ORDER BY datetime(created_at) DESC`;
 
     const rows = await db.getAllAsync<SampleRow>(sql, ...params);
-    return Promise.all(rows.map((row) => hydrateSample(row)));
+    return hydrateSampleBatch(rows);
   },
 
   async search(
