@@ -7,7 +7,7 @@ This guide provides a comprehensive, field-ready protocol for data collectors, a
 ## 📋 Table of Contents
 1. [Project Background & Scientific Goal](#1-project-background--scientific-goal)
 2. [Quick-Start 5-Step Field Workflow](#2-quick-start-5-step-field-workflow)
-3. [App Installation & First-Time Setup](#3-app-installation--first-time-setup)
+3. [App Installation, Registration & Login Guide](#3-app-installation-registration--login-guide)
 4. [Step-by-Step: Adding a New Sample](#4-step-by-step-adding-a-new-sample)
 5. [Leaf Photography & Optical Protocol (Crucial for AI/ML)](#5-leaf-photography--optical-protocol-crucial-for-aiml)
 6. [Chlorophyll Meter (SPAD) Measurement Standard](#6-chlorophyll-meter-spad-measurement-standard)
@@ -33,7 +33,7 @@ To train this model successfully:
 ## 2. Quick-Start 5-Step Field Workflow
 
 ```
-[1. Office (Online)]       Log in to app over Wi-Fi
+[1. Office (Online)]       Log in to app over Wi-Fi (Password or Email OTP)
         ↓
 [2. Field / Lab (Offline)] Measure 3 SPAD points on target leaf
         ↓
@@ -46,18 +46,70 @@ To train this model successfully:
 
 ---
 
-## 3. App Installation & First-Time Setup
+## 3. App Installation, Registration & Login Guide
 
-1. **Permissions Required:**
-   - **Camera:** Required for high-resolution leaf capture.
-   - **Location (GPS):** Required on initial startup to capture coordinates when available.
-   - **Notifications:** Required to notify you of cloud synchronization progress in the background.
-2. **Initial Login:**
-   - Open the app while connected to Wi-Fi or mobile data.
-   - Enter your researcher account email and password.
-   - Once logged in, your session is saved locally in encrypted storage. **You can now use the app completely offline in the tea gardens.**
+### 3.1 Device Permissions Required
+On first launch, grant the required Android permissions:
+- **Camera:** Required for capturing leaf photographs at full optical resolution.
+- **Location (GPS):** Required on startup to automatically stamp latitude and longitude onto records.
+- **Notifications:** Required to receive background sync and export status alerts.
 
-> ⚠️ **Important:** Do NOT tap "Logout" while in the field without internet, as logging back in requires an active internet connection to contact Supabase Auth.
+---
+
+### 3.2 Account Registration (Sign Up)
+
+Only authorized research personnel, students, and enumerators can create accounts.
+
+#### Option A: Self-Registration with Password & Team Passcode
+1. Open the app and tap **"Register"** at the bottom of the sign-in screen.
+2. Enter your institutional **Email Address** (e.g., `researcher@ttri.res.in`).
+3. Enter a secure **Password** (min. 6 characters; save it in your phone's password manager).
+4. Enter the **Research Team Passcode** — this confidential security passcode is provided by your supervisor/lead researcher to prevent unauthorized registrations.
+5. Review and tick both mandatory compliance checkboxes:
+   - ✅ *Confirming awareness of app protocol and having read the User Guide.*
+   - ✅ *Consenting that captured tea field records and images will be uploaded for TTRI research.*
+6. Tap **"Create Research Account"**.
+7. **Email Verification Code (OTP):**
+   - The app navigates to the verification screen.
+   - Check your email inbox for a **6-digit verification code**.
+   - Enter the code and tap **"Verify & Activate Account"**.
+   - If the code has not arrived after 60 seconds, tap **"Resend Code"**.
+
+#### Option B: Pre-Provisioned Registration Without Password (Admin Onboarding)
+- When field data collectors or enumerators are onboarded by the supervisor/admin directly via the research portal or Supabase backend:
+- The administrator registers the user's email address in advance.
+- The user **does not need to create or configure a password**.
+- The user can immediately sign in using **Login Without Password (Email Code)** as described below.
+
+---
+
+### 3.3 User Login (Sign In)
+
+The application provides two flexible login options depending on user preference and connectivity:
+
+#### Option A: Login With Password (Standard)
+1. On the sign-in screen, ensure the **"Password"** tab is selected.
+2. Enter your registered **Email Address** and **Password**.
+3. Tap **"Sign In with Password"**.
+4. If your email was not verified during registration, the app will offer to send a 6-digit confirmation code to your inbox so you can complete verification.
+5. **Forgot Password?** Tap the **"Forgot Password?"** link below the password field to receive a password reset link by email.
+
+#### Option B: Login Without Password (Passwordless Email Code / OTP)
+If you prefer not to enter a password, or if you forgot your password in the field:
+1. On the sign-in screen, tap the **"Email Code"** tab.
+2. Enter your registered **Email Address**.
+3. Tap **"Send Sign-In Code"**.
+4. Check your email inbox for a **6-digit sign-in code** sent from the system.
+5. Enter the 6-digit code on the verification screen and tap **"Verify & Sign In"**.
+6. The app verifies the token with Supabase Auth and logs you in directly without requiring a password.
+7. If needed, you can tap **"Resend Code"** after a 60-second cooldown.
+
+---
+
+### 3.4 Offline Session Persistence
+- Once logged in (via either Password or Email OTP), your authentication session is **securely encrypted and persisted locally on the device**.
+- You can freely turn off mobile data / Wi-Fi and head out into remote tea gardens for full offline data collection.
+- > ⚠️ **CRITICAL FIELD NOTICE:** **Never tap "Logout" while in the field without internet**, as re-authenticating requires an active network connection to reach authentication servers. Always remain logged in throughout field operations.
 
 ---
 

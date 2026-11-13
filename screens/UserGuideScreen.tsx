@@ -9,6 +9,7 @@ import {
   Database,
   FileSpreadsheet,
   HelpCircle,
+  KeyRound,
   Pencil,
   Smartphone,
   Zap,
@@ -39,6 +40,7 @@ const C = {
 // ─── Section definitions ─────────────────────────────────────────────────────
 const SECTIONS = [
   { id: 'quickstart',      color: '#D97706', bg: '#FFFBEB' },
+  { id: 'auth',            color: '#2563EB', bg: '#EFF6FF' },
   { id: 'addSample',       color: '#059669', bg: '#ECFDF5' },
   { id: 'photos',          color: '#2563EB', bg: '#EFF6FF' },
   { id: 'meter',           color: '#7C3AED', bg: '#F5F3FF' },
@@ -51,6 +53,7 @@ const SECTIONS = [
 
 const DEFAULT_STATE: Record<string, boolean> = {
   quickstart: true,
+  auth: false,
   addSample: false,
   photos: false,
   meter: false,
@@ -104,7 +107,7 @@ export default function UserGuideScreen() {
         {/* ── EXPAND / COLLAPSE BAR ────────────────────────────── */}
         <View style={s.controlBar}>
           <View style={s.moduleCount}>
-            <Text style={s.moduleCountText}>9 TOPICS</Text>
+            <Text style={s.moduleCountText}>10 TOPICS</Text>
           </View>
           <View style={s.controlBtns}>
             <Pressable onPress={expandAll} style={s.chip}>
@@ -168,11 +171,63 @@ export default function UserGuideScreen() {
         </Section>
 
         {/* ═══════════════════════════════════════════════════════
-            SECTION 2 — Adding a Sample
+            SECTION 2 — Account Registration & Login
+        ═══════════════════════════════════════════════════════ */}
+        <Section
+          id="auth"
+          number="2"
+          title="Account Registration & Login"
+          badge="With & Without Password"
+          icon={<KeyRound size={20} color={color('auth')} />}
+          color={color('auth')}
+          iconBg={bg('auth')}
+          isOpen={expanded.auth}
+          onToggle={() => toggle('auth')}
+        >
+          <InfoBanner
+            color="#2563EB"
+            bg="#EFF6FF"
+            text="Log in or register while connected to Wi-Fi/data before going to the tea field. Once authenticated, your session is saved offline indefinitely."
+          />
+          <Text style={[s.bold, { color: color('auth'), marginTop: 4, marginBottom: 6 }]}>
+            How to Register:
+          </Text>
+          <Bullet
+            color={color('auth')}
+            title="Register with Password & Passcode"
+            desc="Tap 'Register', enter your institutional email, set a password, enter the supervisor research team passcode, tick both consent boxes, and tap 'Create Account'. Enter the 6-digit OTP code sent to your email to verify."
+          />
+          <Bullet
+            color={color('auth')}
+            title="Pre-Provisioned (Without Password)"
+            desc="If an account was already created for your email by the research supervisor/admin, you do not need to register or remember a password — proceed directly to 'Email Code' sign-in."
+          />
+          <Text style={[s.bold, { color: color('auth'), marginTop: 12, marginBottom: 6 }]}>
+            How to Log In:
+          </Text>
+          <Bullet
+            color={color('auth')}
+            title="Option 1: Login With Password"
+            desc="On the Login screen, keep the 'Password' tab selected. Enter your email and password, then tap 'Sign In with Password'. Use 'Forgot Password?' if needed."
+          />
+          <Bullet
+            color={color('auth')}
+            title="Option 2: Login Without Password (Email Code / OTP)"
+            desc="Switch to the 'Email Code' tab, enter your email, and tap 'Send Sign-In Code'. Enter the 6-digit code received in your inbox to log in immediately without a password."
+          />
+          <InfoBanner
+            color="#DC2626"
+            bg="#FEF2F2"
+            text="⚠ Critical: Do NOT tap 'Logout' in the field without internet. Logging back in requires reaching the auth server."
+          />
+        </Section>
+
+        {/* ═══════════════════════════════════════════════════════
+            SECTION 3 — Adding a Sample
         ═══════════════════════════════════════════════════════ */}
         <Section
           id="addSample"
-          number="2"
+          number="3"
           title="How to Add a New Sample"
           badge="Required"
           icon={<Pencil size={20} color={color('addSample')} />}
@@ -217,11 +272,11 @@ export default function UserGuideScreen() {
         </Section>
 
         {/* ═══════════════════════════════════════════════════════
-            SECTION 3 — Leaf Photography
+            SECTION 4 — Leaf Photography
         ═══════════════════════════════════════════════════════ */}
         <Section
           id="photos"
-          number="3"
+          number="4"
           title="How to Take Good Leaf Photos"
           badge="Very Important"
           icon={<Camera size={20} color={color('photos')} />}
@@ -254,11 +309,11 @@ export default function UserGuideScreen() {
         </Section>
 
         {/* ═══════════════════════════════════════════════════════
-            SECTION 4 — Chlorophyll Meter
+            SECTION 5 — Chlorophyll Meter
         ═══════════════════════════════════════════════════════ */}
         <Section
           id="meter"
-          number="4"
+          number="5"
           title="Using the Chlorophyll Meter (SPAD)"
           badge="Take 3 Readings"
           icon={<Smartphone size={20} color={color('meter')} />}
@@ -296,11 +351,11 @@ export default function UserGuideScreen() {
         </Section>
 
         {/* ═══════════════════════════════════════════════════════
-            SECTION 5 — Viewing & Editing Samples
+            SECTION 6 — Viewing & Editing Samples
         ═══════════════════════════════════════════════════════ */}
         <Section
           id="viewUpdate"
-          number="5"
+          number="6"
           title="Viewing & Editing Your Samples"
           badge="Management"
           icon={<Database size={20} color={color('viewUpdate')} />}
@@ -335,11 +390,11 @@ export default function UserGuideScreen() {
         </Section>
 
         {/* ═══════════════════════════════════════════════════════
-            SECTION 6 — Exporting Data
+            SECTION 7 — Exporting Data
         ═══════════════════════════════════════════════════════ */}
         <Section
           id="export"
-          number="6"
+          number="7"
           title="Exporting Data to Your Phone"
           badge="Daily Backup"
           icon={<FileSpreadsheet size={20} color={color('export')} />}
@@ -380,11 +435,11 @@ export default function UserGuideScreen() {
         </Section>
 
         {/* ═══════════════════════════════════════════════════════
-            SECTION 7 — Cloud Sync
+            SECTION 8 — Cloud Sync
         ═══════════════════════════════════════════════════════ */}
         <Section
           id="sync"
-          number="7"
+          number="8"
           title="Syncing Data to the Cloud"
           badge="Needs Internet"
           icon={<CloudUpload size={20} color={color('sync')} />}
@@ -419,11 +474,11 @@ export default function UserGuideScreen() {
         </Section>
 
         {/* ═══════════════════════════════════════════════════════
-            SECTION 8 — Troubleshooting
+            SECTION 9 — Troubleshooting
         ═══════════════════════════════════════════════════════ */}
         <Section
           id="troubleshooting"
-          number="8"
+          number="9"
           title="Common Questions & Problems"
           badge="Help"
           icon={<HelpCircle size={20} color={color('troubleshooting')} />}
@@ -455,11 +510,11 @@ export default function UserGuideScreen() {
         </Section>
 
         {/* ═══════════════════════════════════════════════════════
-            SECTION 9 — Daily Checklist
+            SECTION 10 — Daily Checklist
         ═══════════════════════════════════════════════════════ */}
         <Section
           id="bestPractices"
-          number="9"
+          number="10"
           title="Daily Field Checklist"
           badge="Every Day"
           icon={<CheckCircle2 size={20} color={color('bestPractices')} />}
