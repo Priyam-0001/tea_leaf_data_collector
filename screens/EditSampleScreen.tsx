@@ -6,6 +6,8 @@ import {
   ActivityIndicator,
   Alert,
   BackHandler,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -333,6 +335,10 @@ export default function EditSampleScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      >
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.content}
@@ -418,6 +424,7 @@ export default function EditSampleScreen() {
           </View>
         )}
       </ScrollView>
+      </KeyboardAvoidingView>
 
       <CameraModal
         visible={showCamera}
@@ -444,6 +451,9 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: C.page,
   },
+  flex: {
+    flex: 1,
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -460,7 +470,7 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: 18,
     paddingTop: 12,
-    paddingBottom: 40,
+    paddingBottom: 80,
   },
   headerBar: {
     marginBottom: 8,

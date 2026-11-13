@@ -6,6 +6,8 @@ import {
   Alert,
   Animated,
   BackHandler,
+  KeyboardAvoidingView,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -312,6 +314,11 @@ export default function AddSampleScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={Platform.OS === 'android' ? 0 : 0}
+      >
       <ScrollView
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.content}
@@ -428,6 +435,7 @@ export default function AddSampleScreen() {
           </View>
         </View>
       </ScrollView>
+      </KeyboardAvoidingView>
 
       <ImageViewing
         images={images.map((image) => ({
@@ -453,11 +461,15 @@ const styles = StyleSheet.create({
     backgroundColor: C.page,
   },
 
+  flex: {
+    flex: 1,
+  },
+
   content: {
     flexGrow: 1,
     paddingHorizontal: 18,
     paddingTop: 12,
-    paddingBottom: 40,
+    paddingBottom: 80,
   },
 
   sections: {
