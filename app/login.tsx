@@ -3,7 +3,6 @@ import { ArrowLeft, BookOpen, Eye, EyeOff, KeyRound, Lock, Mail, RefreshCw } fro
 import { useState } from 'react';
 import {
     Alert,
-    Image,
     KeyboardAvoidingView,
     Platform,
     ScrollView,
@@ -167,16 +166,9 @@ export default function LoginScreen() {
                     keyboardShouldPersistTaps="handled"
                     showsVerticalScrollIndicator={false}
                 >
-                    {/* ── TOP BRANDING SECTION ───────────────────────── */}
+                    {/* ── TOP HEADER SECTION ───────────────────────── */}
                     <View style={s.topSection}>
-                        <Image
-                            source={require('@/assets/images/logo.png')}
-                            style={s.logo}
-                            resizeMode="contain"
-                        />
-                        <Text style={s.institute}>Tocklai Tea Research Institute</Text>
-                        <Text style={s.appName}>PAATSUTRA</Text>
-                        <Text style={s.tagline}>Field Research Companion</Text>
+                        <Text style={s.appName}>Tea Leaf Data Collector</Text>
 
                         {/* Version badge + User Guide */}
                         <View style={s.metaRow}>
@@ -421,29 +413,13 @@ const s = StyleSheet.create({
         paddingBottom: 20,
         paddingHorizontal: 24,
     },
-    logo: { width: 76, height: 76, marginBottom: 10 },
-    institute: {
-        fontSize: 10,
-        color: C.textMuted,
-        fontWeight: '600',
-        letterSpacing: 1.3,
-        textTransform: 'uppercase',
-        textAlign: 'center',
-        marginBottom: 4,
-    },
     appName: {
-        fontSize: 34,
+        fontSize: 26,
         fontWeight: '800',
         color: C.navy,
         letterSpacing: 0.3,
         textAlign: 'center',
-    },
-    tagline: {
-        fontSize: 13,
-        color: C.textMuted,
-        marginTop: 3,
         marginBottom: 14,
-        textAlign: 'center',
     },
     metaRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
     versionBadge: {
