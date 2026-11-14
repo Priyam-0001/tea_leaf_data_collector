@@ -22,15 +22,11 @@ export const flushOptions: {
   { label: 'Autumn Flush', value: 'autumn_flush' },
 ];
 
-// Tocklai Tea Research Institute — standard clone numbers
-export const cloneNumberOptions: { label: string; value: string }[] = [
-  'TV-1', 'TV-2', 'TV-3', 'TV-4', 'TV-5',
-  'TV-6', 'TV-7', 'TV-8', 'TV-9', 'TV-10',
-  'TV-11', 'TV-12', 'TV-13', 'TV-14', 'TV-15',
-  'TV-16', 'TV-17', 'TV-18', 'TV-19', 'TV-20',
-  'TV-21', 'TV-22', 'TV-23', 'TV-24', 'TV-25',
-  'TV-26', 'TV-27', 'TV-28', 'TV-29',
-  'TS-449', 'TS-500', 'TS-520',
-  'T-78', 'T-83',
-  'Tingamira-17', 'BS-1', 'Other',
-].map((v) => ({ label: v, value: v }));
+// Tocklai Tea Research Institute — TV1 to TV30
+export const cloneNumberOptions: { label: string; value: string }[] = Array.from(
+  { length: 30 },
+  (_, i) => {
+    const val = `TV${i + 1}`;
+    return { label: val, value: val };
+  }
+);

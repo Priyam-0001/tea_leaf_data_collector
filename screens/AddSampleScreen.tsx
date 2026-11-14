@@ -337,15 +337,6 @@ export default function AddSampleScreen() {
         />
 
         <View style={styles.sections}>
-          {/* Smart Auto-Fill Banner */}
-          {showAutoFillBanner && (
-            <AutoFillBanner
-              filledCount={autoFillCount}
-              totalCount={totalEligibleCount}
-              onDismiss={() => setShowAutoFillBanner(false)}
-            />
-          )}
-
           {/* Form Fields Sections */}
           <SampleFields control={control} />
 
