@@ -117,6 +117,7 @@ export default function AddSampleScreen() {
     captureLocation,
     loading: gpsLoading,
     error: gpsError,
+    gpsTimedOut,
   } = useLocationCapture();
 
   const [now] = useState(() => new Date());
@@ -261,20 +262,7 @@ export default function AddSampleScreen() {
     }, [cleanupNewImages])
   );
 
-  const onSubmit = handleSubmit(async (values) => {
-    setCloneNumber(values.cloneNumber);
-    setFlush(values.flush);
-    setGardenName(values.gardenName);
-
-    if (!coordinates) {
-      Alert.alert(
-        'Location Required',
-        'Please enable GPS / location permissions to accurately record sample coordinates.',
-        [{ text: 'Retry GPS', onPress: captureLocation }]
-      );
-      return;
-    }
-
+  const doSave = useCallback(async (values: SampleFormInput) => {
     const validation = validateSample(values);
     if (!validation.valid) {
       Alert.alert('Validation Error', validation.message);
@@ -292,19 +280,38 @@ export default function AddSampleScreen() {
       return;
     }
 
-    // ─── Persist clone snapshot for next auto-fill ───────────────────────────
     await Promise.all([
       saveCloneSnapshot(values.cloneNumber, values),
       setLastSavedClone(values.cloneNumber),
     ]);
 
-    // Reset auto-fill state so a fresh entry on the same clone triggers fill again
     autoFilledCloneRef.current = null;
     setShowAutoFillBanner(false);
-
     showAlert('success', 'Sample saved successfully.');
     resetImages();
     router.back();
+  }, [coordinates, images, saveSample, showAlert, resetImages]);
+
+  const onSubmit = handleSubmit(async (values) => {
+    setCloneNumber(values.cloneNumber);
+    setFlush(values.flush);
+    setGardenName(values.gardenName);
+
+    // If GPS is still loading (not yet timed out), warn user and offer to save anyway
+    if (!coordinates && gpsLoading) {
+      Alert.alert(
+        'GPS Still Loading',
+        'GPS is still acquiring a fix. Do you want to save without GPS coordinates? (Coordinates will be recorded as unavailable.)',
+        [
+          { text: 'Wait for GPS', style: 'cancel' },
+          { text: 'Save Without GPS', onPress: () => doSave(values) },
+        ]
+      );
+      return;
+    }
+
+    // GPS timed out or unavailable — save without coordinates, no alert needed
+    await doSave(values);
   });
 
   useEffect(() => {
@@ -388,19 +395,19 @@ export default function AddSampleScreen() {
           {gpsLoading && (
             <View style={styles.gpsBanner}>
               <RotateCw size={14} color={C.blue} />
-              <Text style={styles.gpsBannerText}>Acquiring GPS fix from satellites…</Text>
+              <Text style={styles.gpsBannerText}>Acquiring GPS fix… (you may save without waiting)</Text>
             </View>
           )}
 
-          {gpsError && (
-            <View style={styles.errorContainer}>
-              <Text style={styles.errorText}>{gpsError}</Text>
+          {gpsError && !gpsLoading && (
+            <View style={styles.gpsWarnContainer}>
+              <Text style={styles.gpsWarnText}>⚠ {gpsError}</Text>
               <TouchableOpacity
                 style={styles.retryBtn}
                 onPress={captureLocation}
                 activeOpacity={0.8}
               >
-                <Text style={styles.retryBtnText}>Retry Location</Text>
+                <Text style={styles.retryBtnText}>Retry GPS</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -410,10 +417,10 @@ export default function AddSampleScreen() {
             <TouchableOpacity
               style={[
                 styles.saveBtn,
-                (saving || !coordinates) && styles.saveBtnDisabled,
+                saving && styles.saveBtnDisabled,
               ]}
               onPress={onSubmit}
-              disabled={saving || !coordinates}
+              disabled={saving}
               activeOpacity={0.85}
             >
               <CheckCircle2 size={20} color="#FFFFFF" style={{ marginRight: 8 }} />
@@ -561,8 +568,22 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     fontWeight: '600',
   },
+  gpsWarnContainer: {
+    backgroundColor: '#FFFBEB',
+    padding: 12,
+    borderRadius: 14,
+    gap: 8,
+    borderWidth: 1.5,
+    borderColor: '#FDE68A',
+  },
+  gpsWarnText: {
+    fontSize: 13,
+    color: '#92400E',
+    lineHeight: 18,
+    fontWeight: '600',
+  },
   retryBtn: {
-    backgroundColor: C.danger,
+    backgroundColor: C.blue,
     borderRadius: 10,
     paddingVertical: 8,
     alignItems: 'center',

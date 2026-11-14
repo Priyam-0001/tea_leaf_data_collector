@@ -25,6 +25,8 @@ interface DropdownFieldProps {
   options: DropdownOption[];
   placeholder?: string;
   error?: string;
+  requiredField?: boolean;
+  search?: boolean;
 }
 
 export function DropdownField({
@@ -34,10 +36,15 @@ export function DropdownField({
   options,
   placeholder = 'Select an option',
   error,
+  requiredField = false,
+  search = false,
 }: DropdownFieldProps) {
   return (
     <View style={styles.container}>
-      <Text style={styles.label}>{label}</Text>
+      <View style={styles.labelRow}>
+        <Text style={styles.label}>{label}</Text>
+        {requiredField ? <Text style={styles.requiredMark}>*</Text> : null}
+      </View>
 
       <Dropdown
         style={[
@@ -52,13 +59,15 @@ export function DropdownField({
         labelField="label"
         valueField="value"
         placeholder={placeholder}
-        value={value}
-        maxHeight={280}
-        dropdownPosition="top"
+        value={value || null}
+        maxHeight={320}
+        search={search}
+        searchPlaceholder="Search..."
         onChange={(item) => onValueChange(item.value)}
         placeholderStyle={styles.placeholder}
         selectedTextStyle={styles.selectedText}
         itemTextStyle={styles.itemText}
+        inputSearchStyle={styles.searchInput}
       />
 
       {error ? <Text style={styles.error}>{error}</Text> : null}
@@ -72,10 +81,22 @@ const styles = StyleSheet.create({
     gap: 8,
   },
 
+  labelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+
   label: {
     fontSize: 14,
     fontWeight: '700',
     color: C.navy,
+  },
+
+  requiredMark: {
+    fontSize: 14,
+    fontWeight: '800',
+    color: C.danger,
   },
 
   dropdown: {
@@ -124,6 +145,13 @@ const styles = StyleSheet.create({
     fontSize: 14.5,
     color: C.navy,
     fontWeight: '600',
+  },
+
+  searchInput: {
+    fontSize: 14,
+    color: C.navy,
+    borderColor: '#CBD5E1',
+    borderRadius: 8,
   },
 
   error: {

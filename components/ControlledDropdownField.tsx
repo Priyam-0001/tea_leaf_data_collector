@@ -10,7 +10,8 @@ interface DropdownOption<T extends string> {
 
 type DropdownFieldName =
   | 'leafPosition'
-  | 'flush';
+  | 'flush'
+  | 'cloneNumber';
 
 interface ControlledDropdownFieldProps<
   TValue extends string,
@@ -19,6 +20,9 @@ interface ControlledDropdownFieldProps<
   name: DropdownFieldName;
   label: string;
   options: DropdownOption<TValue>[];
+  placeholder?: string;
+  requiredField?: boolean;
+  search?: boolean;
 }
 
 export function ControlledDropdownField<
@@ -28,6 +32,9 @@ export function ControlledDropdownField<
   name,
   label,
   options,
+  placeholder,
+  requiredField,
+  search,
 }: ControlledDropdownFieldProps<TValue>) {
   return (
     <Controller
@@ -37,8 +44,11 @@ export function ControlledDropdownField<
         return (
           <DropdownField
             label={label}
-            value={field.value}
-            options={options}
+            value={field.value as string}
+            options={options as DropdownOption<string>[]}
+            placeholder={placeholder}
+            requiredField={requiredField}
+            search={search}
             onValueChange={(value) => {
               field.onChange(value);
             }}

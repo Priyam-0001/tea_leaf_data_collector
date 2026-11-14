@@ -4,7 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { ControlledDropdownField } from '@/components/ControlledDropdownField';
 import { ControlledFormField } from '@/components/ControlledFormField';
 import { SectionCard } from '@/components/SectionCard';
-import { leafPositionOptions } from '@/constants/dropdownOptions';
+import { cloneNumberOptions, leafPositionOptions } from '@/constants/dropdownOptions';
 import type { SampleFormInput } from '@/types/sample';
 import { Sprout } from 'lucide-react-native';
 
@@ -21,14 +21,13 @@ export function SampleInformationSection({
       badge="Required"
       icon={<Sprout size={20} color="#2563EB" />}
     >
-      <ControlledFormField
+      <ControlledDropdownField
         control={control}
         name="cloneNumber"
         label="Clone Number"
-        placeholder="e.g. TV-1"
-        autoCapitalize="characters"
-        returnKeyType="next"
-        requiredField={true}
+        options={cloneNumberOptions}
+        placeholder="Select clone number"
+        requiredField
       />
 
       <View style={styles.twoCol}>
